@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  COACH
+  PLAYER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          Role     @default(PLAYER)
+  createdAt     DateTime @default(now())
+
+  player        Player?
+  coach         Coach?
+}
+
+model Player {
+  id             String        @id @default(cuid())
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String        @unique
+  dateOfBirth    DateTime?
+  position       String?
+  shirtNumber    Int?
+  photoUrl       String?
+  bio            String?
+
+  team           Team?         @relation(fields: [teamId], references: [id])
+  teamId         String?
+
+  stats          PlayerStat[]
+  progressNotes  ProgressNote[]
+}
+
+model Coach {
+  id      String @id @default(cuid())
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String @unique
+  title   String?
+
+  teams   Team[]
+}
+
+model Team {
+  id          String    @id @default(cuid())
+  name        String
+  ageGroup    String
+  players     Player[]
+  coaches     Coach[]
+  schedules   ScheduleEvent[]
+  videos      Video[]
+}
+
+model PlayerStat {
+  id          String   @id @default(cuid())
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId    String
+  season      String
+  matchesPlayed Int    @default(0)
+  goals       Int      @default(0)
+  assists     Int      @default(0)
+  minutesPlayed Int    @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+model ProgressNote {
+  id          String   @id @default(cuid())
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId    String
+  authorName  String
+  note        String
+  createdAt   DateTime @default(now())
+}
+
+enum EventType {
+  TRAINING
+  MATCH
+  DRILL
+  OTHER
+}
+
+model ScheduleEvent {
+  id          String    @id @default(cuid())
+  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId      String
+  type        EventType @default(TRAINING)
+  title       String
+  description String?
+  location    String?
+  startsAt    DateTime
+  endsAt      DateTime?
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  team        Team?    @relation(fields: [teamId], references: [id])
+  teamId      String?
+  title       String
+  description String?
+  url         String
+  thumbnailUrl String?
+  createdAt   DateTime @default(now())
+}
+
+model NewsPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String?
+  body        String
+  coverUrl    String?
+  publishedAt DateTime @default(now())
+}
