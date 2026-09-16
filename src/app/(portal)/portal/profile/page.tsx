@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PlayerAvatar } from "@/components/PlayerAvatar";
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
@@ -14,11 +15,14 @@ export default async function ProfilePage() {
     <div>
       <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>MY PROFILE</h1>
 
-      <div style={{ marginTop: 24, background: "white", padding: 24, maxWidth: 480 }}>
-        <p><strong>Name:</strong> {session?.user?.name}</p>
-        <p><strong>Position:</strong> {player?.position ?? "Not set"}</p>
-        <p><strong>Shirt number:</strong> {player?.shirtNumber ?? "Not set"}</p>
-        <p><strong>Team:</strong> {player?.team?.name ?? "Unassigned"}</p>
+      <div style={{ marginTop: 24, background: "white", padding: 32, maxWidth: 480, display: "flex", alignItems: "center", gap: 32 }}>
+        <PlayerAvatar src={player?.photoUrl ?? null} alt={session?.user?.name ?? "Player"} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ margin: 0 }}><strong>Name:</strong> {session?.user?.name}</p>
+          <p style={{ margin: 0 }}><strong>Position:</strong> {player?.position ?? "Not set"}</p>
+          <p style={{ margin: 0 }}><strong>Shirt number:</strong> {player?.shirtNumber ?? "Not set"}</p>
+          <p style={{ margin: 0 }}><strong>Team:</strong> {player?.team?.name ?? "Unassigned"}</p>
+        </div>
       </div>
 
       <h2 className="display" style={{ fontSize: "1.6rem", color: "var(--pitch)", marginTop: 40, marginBottom: 16 }}>

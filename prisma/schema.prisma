@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -14,15 +16,27 @@ enum Role {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String
-  name          String
-  role          Role     @default(PLAYER)
-  createdAt     DateTime @default(now())
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  passwordHash       String
+  name               String
+  role               Role     @default(PLAYER)
+  createdAt          DateTime @default(now())
+  player             Player?
+  coach              Coach?
+  emailNotifications Boolean  @default(true)
+  pushNotifications  Boolean  @default(false)
+  pushSubscriptions  PushSubscription[]
+}
 
-  player        Player?
-  coach         Coach?
+model PushSubscription {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
 }
 
 model Player {
@@ -40,25 +54,42 @@ model Player {
 
   stats          PlayerStat[]
   progressNotes  ProgressNote[]
+  trainingAttendance TrainingAttendance[]
+  assessments    DevelopmentAssessment[]
+  physicalTests  PhysicalTest[]
+  matchPerformances MatchPerformance[]
 }
 
 model Coach {
-  id      String @id @default(cuid())
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId  String @unique
-  title   String?
+  id       String  @id @default(cuid())
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String  @unique
+  title    String?
+  bio      String?
+  photoUrl String?
 
-  teams   Team[]
+  teams    Team[]
 }
 
 model Team {
   id          String    @id @default(cuid())
   name        String
   ageGroup    String
+  crestUrl    String?
   players     Player[]
   coaches     Coach[]
   schedules   ScheduleEvent[]
   videos      Video[]
+  photos      GalleryPhoto[]
+}
+
+model GalleryPhoto {
+  id        String   @id @default(cuid())
+  url       String
+  caption   String?
+  team      Team?    @relation(fields: [teamId], references: [id])
+  teamId    String?
+  createdAt DateTime @default(now())
 }
 
 model PlayerStat {
@@ -99,6 +130,20 @@ model ScheduleEvent {
   location    String?
   startsAt    DateTime
   endsAt      DateTime?
+  opponent    String?
+  homeScore   Int?
+  awayScore   Int?
+  attendance  TrainingAttendance[]
+  performances MatchPerformance[]
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  createdAt DateTime @default(now())
 }
 
 model Video {
@@ -120,4 +165,112 @@ model NewsPost {
   body        String
   coverUrl    String?
   publishedAt DateTime @default(now())
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT_EXCUSED
+  ABSENT_UNEXCUSED
+  INJURED
+}
+
+model TrainingAttendance {
+  id         String        @id @default(cuid())
+  event      ScheduleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId    String
+  player     Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId   String
+  status     AttendanceStatus @default(PRESENT)
+  rating     Int?
+  note       String?
+  recordedBy String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([eventId, playerId])
+  @@index([playerId])
+}
+
+enum AssessmentDomain {
+  TECHNICAL
+  TACTICAL
+  PHYSICAL
+  MENTAL
+}
+
+model DevelopmentAssessment {
+  id         String   @id @default(cuid())
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId   String
+  assessedAt DateTime @default(now())
+  assessedBy String?
+  summary    String?
+  nextGoals  String?
+  scores     AssessmentScore[]
+
+  @@index([playerId, assessedAt])
+}
+
+model AssessmentScore {
+  id           String                @id @default(cuid())
+  assessment   DevelopmentAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  assessmentId String
+  domain       AssessmentDomain
+  attribute    String
+  score        Int
+
+  @@unique([assessmentId, attribute])
+}
+
+model PhysicalTest {
+  id        String   @id @default(cuid())
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId  String
+  testedAt  DateTime @default(now())
+  testedBy  String?
+  results   PhysicalTestResult[]
+
+  @@index([playerId, testedAt])
+}
+
+model PhysicalTestResult {
+  id       String       @id @default(cuid())
+  test     PhysicalTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  testId   String
+  metric   String
+  value    Float
+  unit     String
+
+  @@unique([testId, metric])
+}
+
+model MatchPerformance {
+  id            String        @id @default(cuid())
+  event         ScheduleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId       String
+  player        Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId      String
+  minutesPlayed Int           @default(0)
+  goals         Int           @default(0)
+  assists       Int           @default(0)
+  shots         Int           @default(0)
+  shotsOnTarget Int           @default(0)
+  passesAttempted Int         @default(0)
+  passesCompleted Int         @default(0)
+  keyPasses     Int           @default(0)
+  dribbles      Int           @default(0)
+  tackles       Int           @default(0)
+  interceptions Int           @default(0)
+  recoveries    Int           @default(0)
+  turnovers     Int           @default(0)
+  foulsCommitted Int          @default(0)
+  yellowCards   Int           @default(0)
+  redCards      Int           @default(0)
+  recordedBy    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([eventId, playerId])
+  @@index([playerId])
 }

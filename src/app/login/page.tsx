@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -22,7 +22,14 @@ export default function LoginPage() {
       setError("Incorrect email or password.");
       return;
     }
-    router.push("/portal/dashboard");
+    const session = await getSession();
+    const role = (session?.user as any)?.role;
+    if (role === "ADMIN" || role === "COACH") {
+      router.push("/admin/players");
+    } else {
+      router.push("/portal/dashboard");
+    }
+    router.refresh();
   }
 
   return (

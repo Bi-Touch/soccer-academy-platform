@@ -4,6 +4,11 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "**" }
     ]
+  },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["*.app.github.dev", "localhost:3000"]
+    }
   }
 };
 
