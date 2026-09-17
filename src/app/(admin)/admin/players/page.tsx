@@ -45,6 +45,9 @@ export default async function AdminPlayersPage() {
                 <Link href={`/admin/players/${p.id}/edit`} style={{ marginRight: 16, fontSize: "0.9rem" }}>
                   Edit
                 </Link>
+                <Link href={`/admin/players/${p.id}/training`} style={{ marginRight: 16, fontSize: "0.9rem" }}>
+                  Training
+                </Link>
                 <form action={deletePlayer.bind(null, p.id)} style={{ display: "inline" }}>
                   <button
                     type="submit"
