@@ -9,6 +9,34 @@ type Team = { id: string; name: string };
 type CareerStat = { id: string; season: string; matchesPlayed: number; goals: number; assists: number; minutesPlayed: number };
 type ProgressNote = { id: string; authorName: string; note: string; createdAt: string };
 
+function ChartLegend({ items }: { items: { color: string; label: string }[] }) {
+  return (
+    <div style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
+      {items.map((item) => (
+        <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 3,
+              backgroundColor: item.color,
+              display: "inline-block",
+            }}
+          />
+          <span style={{ fontSize: "0.8rem", opacity: 0.75 }}>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const cardStyle: React.CSSProperties = {
+  background: "#fff",
+  border: "1px solid #e3ded2",
+  borderRadius: 8,
+  padding: 20,
+};
+
 export function EditPlayerTabs({
   playerName,
   dateOfBirth,
@@ -259,9 +287,9 @@ export function EditPlayerTabs({
             <p style={{ opacity: 0.7 }}>No stats recorded for any season yet.</p>
           ) : (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24 }}>
-                <div>
-                  <h3 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+                <div style={cardStyle}>
+                  <h3 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
                     GOAL CONTRIBUTIONS
                   </h3>
                   <GroupedBarChart
@@ -273,25 +301,22 @@ export function EditPlayerTabs({
                     height={140}
                   />
                 </div>
-                <div>
-                  <h3 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 12 }}>
+                <div style={cardStyle}>
+                  <h3 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
                     MATCHES
                   </h3>
-                  <div style={{ height: 20, marginBottom: 12 }} />
+                  <ChartLegend items={[{ color: "var(--floodlight)", label: "Matches played" }]} />
                   <BarChart
                     data={[...careerStats].reverse().map((s) => ({ label: s.season, value: s.matchesPlayed }))}
                     orientation="vertical"
                     height={140}
                   />
                 </div>
-                <div>
-                  <h3 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 12 }}>
+                <div style={cardStyle}>
+                  <h3 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
                     MINUTES
                   </h3>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, height: 20, marginBottom: 12, fontSize: "0.8rem" }}>
-                    <span style={{ width: 10, height: 10, background: "var(--card-red)", display: "inline-block" }} />
-                    Minutes
-                  </div>
+                  <ChartLegend items={[{ color: "var(--card-red)", label: "Minutes played" }]} />
                   <BarChart
                     data={[...careerStats].reverse().map((s) => ({ label: s.season, value: s.minutesPlayed }))}
                     orientation="vertical"
@@ -304,28 +329,30 @@ export function EditPlayerTabs({
               <h3 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginTop: 32, marginBottom: 12 }}>
                 FULL HISTORY
               </h3>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ textAlign: "left", borderBottom: "2px solid var(--ink)" }}>
-                    <th style={{ padding: "8px 0" }}>Season</th>
-                    <th>Matches</th>
-                    <th>Goals</th>
-                    <th>Assists</th>
-                    <th>Minutes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {careerStats.map((s) => (
-                    <tr key={s.id} style={{ borderBottom: "1px solid #e3ded2" }}>
-                      <td style={{ padding: "8px 0" }}>{s.season}</td>
-                      <td>{s.matchesPlayed}</td>
-                      <td>{s.goals}</td>
-                      <td>{s.assists}</td>
-                      <td>{s.minutesPlayed}</td>
+              <div style={{ ...cardStyle, padding: 0, overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", borderBottom: "2px solid var(--ink)" }}>
+                      <th style={{ padding: "12px 16px" }}>Season</th>
+                      <th style={{ padding: "12px 16px" }}>Matches</th>
+                      <th style={{ padding: "12px 16px" }}>Goals</th>
+                      <th style={{ padding: "12px 16px" }}>Assists</th>
+                      <th style={{ padding: "12px 16px" }}>Minutes</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {careerStats.map((s) => (
+                      <tr key={s.id} style={{ borderBottom: "1px solid #e3ded2" }}>
+                        <td style={{ padding: "10px 16px" }}>{s.season}</td>
+                        <td style={{ padding: "10px 16px" }}>{s.matchesPlayed}</td>
+                        <td style={{ padding: "10px 16px" }}>{s.goals}</td>
+                        <td style={{ padding: "10px 16px" }}>{s.assists}</td>
+                        <td style={{ padding: "10px 16px" }}>{s.minutesPlayed}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </>
           )}
         </div>
@@ -357,7 +384,7 @@ export function EditPlayerTabs({
             <p style={{ opacity: 0.7 }}>No notes yet.</p>
           ) : (
             progressNotes.map((n) => (
-              <div key={n.id} style={{ background: "white", padding: 16, marginBottom: 12 }}>
+              <div key={n.id} style={{ ...cardStyle, marginBottom: 12 }}>
                 <p style={{ fontSize: "0.8rem", opacity: 0.6, marginBottom: 6 }}>
                   {n.authorName} &middot; {new Date(n.createdAt).toLocaleDateString("en-GB", { dateStyle: "medium" })}
                 </p>

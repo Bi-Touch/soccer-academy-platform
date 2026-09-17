@@ -3,6 +3,27 @@ import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { BarChart } from "@/components/BarChart";
 import Link from "next/link";
 
+function ChartLegend({ items }: { items: { color: string; label: string }[] }) {
+  return (
+    <div style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
+      {items.map((item) => (
+        <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 3,
+              backgroundColor: item.color,
+              display: "inline-block",
+            }}
+          />
+          <span style={{ fontSize: "0.8rem", opacity: 0.75 }}>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default async function TeamTrainingReportPage({ searchParams }: { searchParams: { teamId?: string } }) {
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
@@ -34,6 +55,13 @@ export default async function TeamTrainingReportPage({ searchParams }: { searchP
       value: s.avgRating ?? 0,
     }));
 
+  const cardStyle: React.CSSProperties = {
+    background: "#fff",
+    border: "1px solid #e3ded2",
+    borderRadius: 8,
+    padding: 20,
+  };
+
   return (
     <div>
       <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>TEAM TRAINING REPORT</h1>
@@ -59,19 +87,34 @@ export default async function TeamTrainingReportPage({ searchParams }: { searchP
         <p style={{ opacity: 0.7, marginTop: 32 }}>No logged training sessions for {activeTeam.name} yet.</p>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 32 }}>
-            <div>
-              <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 12 }}>
-                ATTENDANCE RATE PER SESSION (%)
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 32 }}>
+            <div style={cardStyle}>
+              <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
+                ATTENDANCE RATE PER SESSION
               </h2>
-              <BarChart data={attendanceChartData} orientation="vertical" height={160} />
+              <ChartLegend items={[{ color: "var(--card-orange, #E8A33D)", label: "% of squad present" }]} />
+              <BarChart
+                data={attendanceChartData}
+                orientation="vertical"
+                height={160}
+                color="var(--card-orange, #E8A33D)"
+                max={100}
+                unit="%"
+              />
             </div>
-            <div>
-              <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 12 }}>
+            <div style={cardStyle}>
+              <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
                 AVERAGE RATING PER SESSION
               </h2>
+              <ChartLegend items={[{ color: "var(--card-red)", label: "Avg. coach rating (out of 5)" }]} />
               {ratingChartData.length > 0 ? (
-                <BarChart data={ratingChartData} orientation="vertical" height={160} color="var(--card-red)" />
+                <BarChart
+                  data={ratingChartData}
+                  orientation="vertical"
+                  height={160}
+                  color="var(--card-red)"
+                  max={5}
+                />
               ) : (
                 <p style={{ opacity: 0.6, fontSize: "0.85rem" }}>No ratings recorded yet.</p>
               )}
@@ -81,26 +124,28 @@ export default async function TeamTrainingReportPage({ searchParams }: { searchP
           <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginTop: 40, marginBottom: 12 }}>
             SESSION BY SESSION
           </h2>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid var(--ink)", fontSize: "0.85rem" }}>
-                <th style={{ padding: "8px 0" }}>Date</th>
-                <th>Session</th>
-                <th>Attended</th>
-                <th>Avg. rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...sessions].reverse().map((s) => (
-                <tr key={s.id} style={{ borderBottom: "1px solid #e3ded2", fontSize: "0.9rem" }}>
-                  <td style={{ padding: "8px 0" }}>{s.startsAt.toLocaleDateString()}</td>
-                  <td>{s.title}</td>
-                  <td>{s.attendedCount}/{squadSize}</td>
-                  <td>{s.avgRating !== null ? s.avgRating.toFixed(1) : "—"}</td>
+          <div style={{ ...cardStyle, padding: 0, overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: "2px solid var(--ink)", fontSize: "0.85rem" }}>
+                  <th style={{ padding: "12px 16px" }}>Date</th>
+                  <th style={{ padding: "12px 16px" }}>Session</th>
+                  <th style={{ padding: "12px 16px" }}>Attended</th>
+                  <th style={{ padding: "12px 16px" }}>Avg. rating</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {[...sessions].reverse().map((s) => (
+                  <tr key={s.id} style={{ borderBottom: "1px solid #e3ded2", fontSize: "0.9rem" }}>
+                    <td style={{ padding: "10px 16px" }}>{s.startsAt.toLocaleDateString()}</td>
+                    <td style={{ padding: "10px 16px" }}>{s.title}</td>
+                    <td style={{ padding: "10px 16px" }}>{s.attendedCount}/{squadSize}</td>
+                    <td style={{ padding: "10px 16px" }}>{s.avgRating !== null ? s.avgRating.toFixed(1) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>
