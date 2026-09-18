@@ -1,25 +1,46 @@
 "use client";
 
+function getNiceGridlineValues(max: number, targetCount = 4): number[] {
+  if (max <= 0) return [0];
+  const rawStep = max / targetCount;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const residual = rawStep / magnitude;
+  let niceStep;
+  if (residual > 5) niceStep = 10 * magnitude;
+  else if (residual > 2) niceStep = 5 * magnitude;
+  else if (residual > 1) niceStep = 2 * magnitude;
+  else niceStep = magnitude;
+
+  const values: number[] = [];
+  for (let v = 0; v <= max + 0.0001; v += niceStep) {
+    values.push(Math.round(v * 100) / 100);
+  }
+  return values;
+}
+
 export function GroupedBarChart({
   labels,
   series,
   height = 180,
   max: maxProp,
-  gridlines = 4,
 }: {
   labels: string[];
   series: { name: string; color: string; values: number[] }[];
   height?: number;
   max?: number;
-  gridlines?: number;
 }) {
   if (labels.length === 0) return null;
 
   const plottedSeries = series.filter((s) => s.values.length > 0);
   const allValues = plottedSeries.flatMap((s) => s.values);
   const max = maxProp ?? Math.max(...allValues, 1);
-  const chartHeight = height - 50;
-  const gridStep = max / gridlines;
+
+  const barWidth = 18;
+  const barGap = 4;
+  const topPad = 22;
+  const bottomLabelH = 28;
+  const chartHeight = height - topPad - bottomLabelH;
+  const gridValues = getNiceGridlineValues(max);
 
   return (
     <div>
@@ -32,10 +53,9 @@ export function GroupedBarChart({
         ))}
       </div>
 
-      <div style={{ position: "relative" }}>
-        <div style={{ position: "absolute", top: 20, left: 0, right: 0, height: chartHeight, pointerEvents: "none" }}>
-          {Array.from({ length: gridlines + 1 }).map((_, i) => {
-            const value = gridStep * i;
+      <div style={{ position: "relative", height }}>
+        <div style={{ position: "absolute", top: topPad, left: 0, right: 0, height: chartHeight, pointerEvents: "none" }}>
+          {gridValues.map((value, i) => {
             const bottomPos = (value / max) * chartHeight;
             return (
               <div
@@ -51,33 +71,40 @@ export function GroupedBarChart({
                 }}
               >
                 <span style={{ position: "relative", top: -7, background: "#fff", paddingRight: 4 }}>
-                  {Math.round(value)}
+                  {value}
                 </span>
               </div>
             );
           })}
         </div>
 
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 20, height, paddingTop: 20, position: "relative" }}>
+        <div style={{ display: "flex", gap: 20, height: "100%", position: "relative" }}>
           {labels.map((label, i) => (
-            <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: "100%" }}>
+            <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ height: topPad, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: barGap }}>
                 {plottedSeries.map((s, si) => (
-                  <div key={s.name + si} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-                    <div style={{ fontSize: "0.75rem", fontWeight: 600, marginBottom: 4 }}>{s.values[i]}</div>
-                    <div
-                      style={{
-                        width: 18,
-                        height: `${(s.values[i] / max) * chartHeight}px`,
-                        background: s.color,
-                        transition: "height 0.6s ease",
-                        borderRadius: "3px 3px 0 0",
-                      }}
-                    />
-                  </div>
+                  <span key={s.name + si} style={{ width: barWidth, textAlign: "center", fontSize: "0.75rem", fontWeight: 600 }}>
+                    {s.values[i]}
+                  </span>
                 ))}
               </div>
-              <div style={{ fontSize: "0.75rem", opacity: 0.65, marginTop: 8 }}>{label}</div>
+              <div style={{ height: chartHeight, width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: barGap }}>
+                {plottedSeries.map((s, si) => (
+                  <div
+                    key={s.name + si}
+                    style={{
+                      width: barWidth,
+                      height: `${(s.values[i] / max) * chartHeight}px`,
+                      background: s.color,
+                      transition: "height 0.6s ease",
+                      borderRadius: "3px 3px 0 0",
+                    }}
+                  />
+                ))}
+              </div>
+              <div style={{ height: bottomLabelH, display: "flex", alignItems: "flex-start", paddingTop: 6, fontSize: "0.75rem", opacity: 0.65 }}>
+                {label}
+              </div>
             </div>
           ))}
         </div>

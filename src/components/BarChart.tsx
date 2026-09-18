@@ -1,5 +1,23 @@
 "use client";
 
+function getNiceGridlineValues(max: number, targetCount = 4): number[] {
+  if (max <= 0) return [0];
+  const rawStep = max / targetCount;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const residual = rawStep / magnitude;
+  let niceStep;
+  if (residual > 5) niceStep = 10 * magnitude;
+  else if (residual > 2) niceStep = 5 * magnitude;
+  else if (residual > 1) niceStep = 2 * magnitude;
+  else niceStep = magnitude;
+
+  const values: number[] = [];
+  for (let v = 0; v <= max + 0.0001; v += niceStep) {
+    values.push(Math.round(v * 100) / 100);
+  }
+  return values;
+}
+
 export function BarChart({
   data,
   orientation = "vertical",
@@ -7,7 +25,6 @@ export function BarChart({
   height = 180,
   max: maxProp,
   unit = "",
-  gridlines = 4,
 }: {
   data: { label: string; value: number }[];
   orientation?: "vertical" | "horizontal";
@@ -15,7 +32,6 @@ export function BarChart({
   height?: number;
   max?: number;
   unit?: string;
-  gridlines?: number;
 }) {
   if (data.length === 0) return null;
   const max = maxProp ?? Math.max(...data.map((d) => d.value), 1);
@@ -47,18 +63,15 @@ export function BarChart({
     );
   }
 
-  // Fixed pixel slots so bars, gridlines, and labels all agree on where "zero" is
-  const topPad = 22;        // space reserved for the value label above each bar
-  const bottomLabelH = 28;  // space reserved for the date/season label below each bar
+  const topPad = 22;
+  const bottomLabelH = 28;
   const chartHeight = height - topPad - bottomLabelH;
-  const gridStep = max / gridlines;
+  const gridValues = getNiceGridlineValues(max);
 
   return (
     <div style={{ position: "relative", height }}>
-      {/* Gridlines, anchored to the exact same box the bars grow inside */}
       <div style={{ position: "absolute", top: topPad, left: 0, right: 0, height: chartHeight, pointerEvents: "none" }}>
-        {Array.from({ length: gridlines + 1 }).map((_, i) => {
-          const value = gridStep * i;
+        {gridValues.map((value, i) => {
           const bottomPos = (value / max) * chartHeight;
           return (
             <div
@@ -74,7 +87,7 @@ export function BarChart({
               }}
             >
               <span style={{ position: "relative", top: -7, background: "#fff", paddingRight: 4 }}>
-                {Math.round(value)}{unit}
+                {value}{unit}
               </span>
             </div>
           );
@@ -84,11 +97,9 @@ export function BarChart({
       <div style={{ display: "flex", gap: 16, height: "100%", position: "relative" }}>
         {data.map((d) => (
           <div key={d.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {/* value label — fixed height slot */}
             <div style={{ height: topPad, display: "flex", alignItems: "flex-end", fontSize: "0.8rem", fontWeight: 600 }}>
               {d.value}{unit}
             </div>
-            {/* bar — fixed height slot, bar grows up from the bottom of this box */}
             <div style={{ height: chartHeight, width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
               <div
                 style={{
@@ -101,7 +112,6 @@ export function BarChart({
                 }}
               />
             </div>
-            {/* date/season label — fixed height slot */}
             <div style={{ height: bottomLabelH, display: "flex", alignItems: "flex-start", paddingTop: 6, fontSize: "0.75rem", opacity: 0.65 }}>
               {d.label}
             </div>
