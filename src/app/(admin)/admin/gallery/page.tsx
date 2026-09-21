@@ -21,7 +21,7 @@ export default async function AdminGalleryPage() {
           <div key={photo.id} style={{ background: "white" }}>
             <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
               <Image src={photo.url} alt={photo.caption ?? ""} fill style={{ objectFit: "cover" }} sizes="(max-width: 768px) 50vw, 180px" />
-            </div>>
+            </div>
             <div style={{ padding: 10 }}>
               <div style={{ fontSize: "0.85rem" }}>{photo.caption ?? "No caption"}</div>
               <div style={{ fontSize: "0.75rem", opacity: 0.6, marginTop: 2 }}>{photo.team?.name ?? "All teams"}</div>
