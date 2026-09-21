@@ -1,11 +1,15 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT || "mailto:admin@example.com",
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+const vapidConfigured = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+
+if (vapidConfigured) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || "mailto:admin@example.com",
+    process.env.VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+  );
+}
 
 const recipientSelect = {
   id: true,
@@ -26,6 +30,7 @@ type Recipient = {
 };
 
 async function sendPush(recipient: Recipient, title: string, body: string, url: string) {
+  if (!vapidConfigured) return;
   if (!recipient.pushNotifications || recipient.pushSubscriptions.length === 0) return;
   const payload = JSON.stringify({ title, body, url });
 
