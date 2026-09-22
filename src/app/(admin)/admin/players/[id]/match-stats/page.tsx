@@ -4,7 +4,15 @@ import Link from "next/link";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { BarChart } from "@/components/BarChart";
 import { GroupedBarChart } from "@/components/GroupedBarChart";
+import { ChartLegend } from "@/components/ChartLegend";
 import { MATCH_STAT_GROUPS } from "@/lib/matchStats";
+
+const cardStyle: React.CSSProperties = {
+  background: "#fff",
+  border: "1px solid #e3ded2",
+  borderRadius: 8,
+  padding: 20,
+};
 
 export default async function PlayerMatchStatsPage({ params }: { params: { id: string } }) {
   const user = await getSessionUser();
@@ -65,7 +73,7 @@ export default async function PlayerMatchStatsPage({ params }: { params: { id: s
         <p style={{ opacity: 0.7, marginTop: 32 }}>No match stats recorded for this player yet.</p>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginTop: 24, maxWidth: 700 }}>
+          <div className="stat-summary-grid">
             {[
               [matchesPlayed, "Matches"],
               [totals.goals, "Goals"],
@@ -80,23 +88,25 @@ export default async function PlayerMatchStatsPage({ params }: { params: { id: s
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24, marginTop: 40 }}>
-            <div>
-              <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 12 }}>
+          <div className="chart-grid-3">
+            <div style={cardStyle}>
+              <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
                 GOAL CONTRIBUTIONS
               </h2>
               <GroupedBarChart labels={labels} series={goalContributionSeries} height={140} />
             </div>
-            <div>
-              <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 12 }}>
-                PASSING ACCURACY (%)
+            <div style={cardStyle}>
+              <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
+                PASSING ACCURACY
               </h2>
-              <BarChart data={passingAccuracyData} orientation="vertical" height={140} />
+              <ChartLegend items={[{ color: "var(--floodlight, #E8A33D)", label: "Passes completed (%)" }]} />
+              <BarChart data={passingAccuracyData} orientation="vertical" height={140} color="var(--floodlight, #E8A33D)" max={100} unit="%" />
             </div>
-            <div>
-              <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 12 }}>
+            <div style={cardStyle}>
+              <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
                 DEFENSIVE ACTIONS
               </h2>
+              <ChartLegend items={[{ color: "var(--card-red)", label: "Tackles + interceptions + recoveries" }]} />
               <BarChart data={defensiveActionsData} orientation="vertical" height={140} color="var(--card-red)" />
             </div>
           </div>
@@ -104,24 +114,24 @@ export default async function PlayerMatchStatsPage({ params }: { params: { id: s
           <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginTop: 40, marginBottom: 12 }}>
             FULL HISTORY
           </h2>
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ ...cardStyle, padding: 0, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
               <thead>
                 <tr style={{ textAlign: "left", borderBottom: "2px solid var(--ink)", fontSize: "0.8rem" }}>
-                  <th style={{ padding: "8px 12px 8px 0" }}>Match</th>
+                  <th style={{ padding: "12px 16px" }}>Match</th>
                   {MATCH_STAT_GROUPS.flatMap((g) => g.fields).map((f) => (
-                    <th key={f.key} style={{ padding: "0 8px" }}>{f.label}</th>
+                    <th key={f.key} style={{ padding: "12px 8px" }}>{f.label}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {[...performances].reverse().map((p) => (
                   <tr key={p.id} style={{ borderBottom: "1px solid #e3ded2", fontSize: "0.85rem" }}>
-                    <td style={{ padding: "8px 12px 8px 0" }}>
+                    <td style={{ padding: "10px 16px" }}>
                       {p.event.startsAt.toLocaleDateString()}{p.event.opponent ? ` vs ${p.event.opponent}` : ""}
                     </td>
                     {MATCH_STAT_GROUPS.flatMap((g) => g.fields).map((f) => (
-                      <td key={f.key} style={{ padding: "0 8px" }}>
+                      <td key={f.key} style={{ padding: "10px 8px" }}>
                         {(p as unknown as Record<string, number>)[f.key]}
                       </td>
                     ))}

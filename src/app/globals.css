@@ -156,6 +156,51 @@ a {
   }
 }
 
+html, body {
+  overflow-x: hidden;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.chart-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+}
+
+@media (max-width: 900px) {
+  .chart-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+  max-width: 700px;
+}
+
+@media (max-width: 700px) {
+  .stat-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .report-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
   .gallery-grid {
     grid-template-columns: repeat(3, 1fr);
