@@ -45,7 +45,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           className="admin-header"
           style={{
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent: "flex-start",
             alignItems: "center",
             padding: "14px 40px",
             borderBottom: "1px solid #e3ded2",
@@ -58,7 +58,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <label htmlFor="nav-toggle" className="nav-toggle-label" aria-label="Toggle menu">
             &#9776;
           </label>
-          <UserMenu name={session?.user?.name ?? ""} role={role ? ROLE_LABEL[role] : undefined} photoUrl={null} />
+          <div style={{ marginLeft: "auto" }}>
+            <UserMenu name={session?.user?.name ?? ""} role={role ? ROLE_LABEL[role] : undefined} photoUrl={null} />
+          </div>
         </header>
 
         <main className="admin-main" style={{ flex: 1, padding: 40, background: "var(--chalk)", minWidth: 0 }}>
