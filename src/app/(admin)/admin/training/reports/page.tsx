@@ -67,7 +67,7 @@ export default async function TeamTrainingReportPage({ searchParams }: { searchP
         <p style={{ opacity: 0.7, marginTop: 32 }}>No logged training sessions for {activeTeam.name} yet.</p>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 32 }}>
+          <div className="report-grid">
             <div style={cardStyle}>
               <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
                 ATTENDANCE RATE PER SESSION
