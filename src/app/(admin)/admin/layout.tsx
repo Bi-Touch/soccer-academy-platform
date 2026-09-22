@@ -24,6 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/players" style={{ textDecoration: "none" }}>Players</Link>
           <Link href="/admin/schedule" style={{ textDecoration: "none" }}>Schedule</Link>
           <Link href="/admin/training" style={{ textDecoration: "none" }}>Training Log</Link>
+          <Link href="/admin/matches" style={{ textDecoration: "none" }}>Match Stats</Link>
           <Link href="/admin/training/reports" style={{ textDecoration: "none" }}>Training Reports</Link>
           {isAdmin && <Link href="/admin/news" style={{ textDecoration: "none" }}>News</Link>}
           <Link href="/admin/videos" style={{ textDecoration: "none" }}>Videos</Link>
