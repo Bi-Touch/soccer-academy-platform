@@ -90,6 +90,72 @@ a {
   grid-template-columns: repeat(5, 1fr);
 }
 
+.admin-sidebar {
+  width: 220px;
+  background: var(--ink);
+  color: var(--chalk);
+  padding: 24px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.nav-toggle-checkbox {
+  display: none;
+}
+
+.nav-toggle-label {
+  display: none;
+}
+
+.nav-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 50;
+  }
+
+  .nav-toggle-checkbox:checked ~ .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  .nav-toggle-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+
+  .nav-toggle-checkbox:checked ~ .nav-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 40;
+  }
+
+  .admin-header {
+    padding: 14px 16px !important;
+  }
+
+  .admin-main {
+    padding: 20px !important;
+  }
+}
+
 @media (max-width: 900px) {
   .gallery-grid {
     grid-template-columns: repeat(3, 1fr);
