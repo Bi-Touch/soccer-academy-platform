@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { deleteTeam } from "./actions";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 
+const rowStyle: React.CSSProperties = {
+  background: "white",
+  border: "1px solid #e3ded2",
+  borderRadius: 8,
+  padding: 16,
+  display: "flex",
+  alignItems: "center",
+  gap: 16,
+};
+
 export default async function AdminTeamsPage() {
   const teams = await prisma.team.findMany({ include: { players: true } });
 
@@ -15,7 +25,7 @@ export default async function AdminTeamsPage() {
 
       <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
         {teams.map((team) => (
-          <div key={team.id} style={{ background: "white", padding: 16, display: "flex", alignItems: "center", gap: 16 }}>
+          <div key={team.id} style={rowStyle}>
             <PlayerAvatar src={team.crestUrl} alt={team.name} size={48} />
             <div style={{ flex: 1 }}>
               <strong>{team.name}</strong>

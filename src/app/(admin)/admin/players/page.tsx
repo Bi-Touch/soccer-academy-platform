@@ -12,6 +12,17 @@ const tagStyle: React.CSSProperties = {
   borderRadius: 10,
 };
 
+const rowStyle: React.CSSProperties = {
+  background: "white",
+  border: "1px solid #e3ded2",
+  borderRadius: 8,
+  padding: 16,
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: 16,
+};
+
 const actionLinkStyle = { fontSize: "0.9rem" };
 
 export default async function AdminPlayersPage() {
@@ -37,17 +48,7 @@ export default async function AdminPlayersPage() {
 
       <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
         {players.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              background: "white",
-              padding: 16,
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
+          <div key={p.id} style={rowStyle}>
             <PlayerAvatar src={p.photoUrl} alt={p.user.name} size={48} rounded />
 
             <div style={{ flex: "1 1 200px" }}>
