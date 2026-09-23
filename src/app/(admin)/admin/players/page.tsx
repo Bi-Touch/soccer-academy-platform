@@ -2,6 +2,17 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deletePlayer } from "./actions";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
+import { PlayerAvatar } from "@/components/PlayerAvatar";
+
+const tagStyle: React.CSSProperties = {
+  fontSize: "0.75rem",
+  color: "var(--pitch)",
+  background: "#f4f1ea",
+  padding: "2px 8px",
+  borderRadius: 10,
+};
+
+const actionLinkStyle = { fontSize: "0.9rem" };
 
 export default async function AdminPlayersPage() {
   const user = await getSessionUser();
@@ -24,62 +35,54 @@ export default async function AdminPlayersPage() {
         )}
       </div>
 
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", marginTop: 24, borderCollapse: "collapse", minWidth: 800 }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid var(--ink)" }}>
-              <th style={{ padding: "8px 0" }}>Name</th>
-              <th>Team</th>
-              <th>Position</th>
-              <th>Shirt #</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {players.map((p) => (
-              <tr key={p.id} style={{ borderBottom: "1px solid #e3ded2" }}>
-                <td style={{ padding: "8px 0" }}>{p.user.name}</td>
-                <td>{p.team?.name ?? "—"}</td>
-                <td>{p.position ?? "—"}</td>
-                <td>{p.shirtNumber ?? "—"}</td>
-                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                  <Link href={`/admin/players/${p.id}/edit`} style={{ marginRight: 16, fontSize: "0.9rem" }}>
-                    Edit
-                  </Link>
-                  <Link href={`/admin/players/${p.id}/training`} style={{ marginRight: 16, fontSize: "0.9rem" }}>
-                    Training
-                  </Link>
-                  <Link href={`/admin/players/${p.id}/assessments`} style={{ marginRight: 16, fontSize: "0.9rem" }}>
-                    Assessments
-                  </Link>
-                  <Link href={`/admin/players/${p.id}/physical-tests`} style={{ marginRight: 16, fontSize: "0.9rem" }}>
-                    Physical
-                  </Link>
-                  <Link href={`/admin/players/${p.id}/match-stats`} style={{ marginRight: 16, fontSize: "0.9rem" }}>
-                    Match Stats
-                  </Link>
-                  <form action={deletePlayer.bind(null, p.id)} style={{ display: "inline" }}>
-                    <button
-                      type="submit"
-                      style={{ background: "none", border: "none", color: "var(--card-red)", cursor: "pointer", fontSize: "0.9rem", padding: 0 }}
-                    >
-                      Remove
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            ))}
-            {players.length === 0 && (
-              <tr>
-                <td colSpan={5} style={{ padding: "24px 0", opacity: 0.7 }}>
-                  {accessibleTeamIds && accessibleTeamIds.length === 0
-                    ? "You aren't assigned to any teams yet."
-                    : 'No players yet — click "Add Player" to create the first one.'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+        {players.map((p) => (
+          <div
+            key={p.id}
+            style={{
+              background: "white",
+              padding: 16,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 16,
+            }}
+          >
+            <PlayerAvatar src={p.photoUrl} alt={p.user.name} size={48} rounded />
+
+            <div style={{ flex: "1 1 200px" }}>
+              <strong>{p.user.name}</strong>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                <span style={tagStyle}>{p.team?.name ?? "No team"}</span>
+                {p.position && <span style={tagStyle}>{p.position}</span>}
+                {p.shirtNumber != null && <span style={tagStyle}>#{p.shirtNumber}</span>}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
+              <Link href={`/admin/players/${p.id}/edit`} style={actionLinkStyle}>Edit</Link>
+              <Link href={`/admin/players/${p.id}/training`} style={actionLinkStyle}>Training</Link>
+              <Link href={`/admin/players/${p.id}/assessments`} style={actionLinkStyle}>Assessments</Link>
+              <Link href={`/admin/players/${p.id}/physical-tests`} style={actionLinkStyle}>Physical</Link>
+              <Link href={`/admin/players/${p.id}/match-stats`} style={actionLinkStyle}>Match Stats</Link>
+              <form action={deletePlayer.bind(null, p.id)}>
+                <button
+                  type="submit"
+                  style={{ background: "none", border: "none", color: "var(--card-red)", cursor: "pointer", fontSize: "0.9rem", padding: 0 }}
+                >
+                  Remove
+                </button>
+              </form>
+            </div>
+          </div>
+        ))}
+        {players.length === 0 && (
+          <p style={{ opacity: 0.7 }}>
+            {accessibleTeamIds && accessibleTeamIds.length === 0
+              ? "You aren't assigned to any teams yet."
+              : 'No players yet — click "Add Player" to create the first one.'}
+          </p>
+        )}
       </div>
     </div>
   );

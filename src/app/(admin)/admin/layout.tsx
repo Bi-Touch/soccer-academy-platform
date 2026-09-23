@@ -111,6 +111,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
             <NavGroup id="group-reports" label="Reports" icon={ICONS.barChart}>
               <Link href="/admin/training/reports" style={navLinkStyle}>Training Reports</Link>
+              <Link href="/admin/reports" style={navLinkStyle}>Team Reports</Link>
             </NavGroup>
 
             <NavGroup id="group-content" label="Content" icon={ICONS.image}>
