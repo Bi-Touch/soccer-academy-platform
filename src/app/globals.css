@@ -114,6 +114,39 @@ a {
   display: none;
 }
 
+.nav-group-checkbox {
+  display: none;
+}
+
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+}
+
+.nav-group-chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.nav-group-checkbox:checked + .nav-group-header .nav-group-chevron {
+  transform: rotate(-90deg);
+}
+
+.nav-group-content {
+  overflow: hidden;
+  max-height: 300px;
+  transition: max-height 0.25s ease;
+}
+
+.nav-group-checkbox:checked + .nav-group-header + .nav-group-content {
+  max-height: 0;
+}
+
 @media (max-width: 768px) {
   .admin-sidebar {
     position: fixed;
