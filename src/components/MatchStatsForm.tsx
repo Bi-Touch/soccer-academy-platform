@@ -152,53 +152,52 @@ export function MatchStatsForm({
               </span>
             </button>
 
-            {isOpen && (
-              <div
-                style={{
-                  padding: "8px 20px 24px",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: "24px 40px",
-                  borderTop: "1px solid #e3ded2",
-                }}
-              >
-                {MATCH_STAT_GROUPS.map((group) => (
-                  <div key={group.title}>
-                    <h4
-                      style={{
-                        fontSize: "0.72rem",
-                        fontWeight: 600,
-                        color: "var(--pitch)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.03em",
-                        marginTop: 16,
-                        marginBottom: 10,
-                        paddingLeft: 10,
-                        borderLeft: `3px solid ${GROUP_COLORS[group.title] ?? "var(--pitch)"}`,
-                      }}
-                    >
-                      {group.title}
-                    </h4>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {group.fields.map((f) => (
-                        <div
-                          key={f.key}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 12,
-                          }}
-                        >
-                          <span style={{ fontSize: "0.82rem", opacity: 0.8 }}>{f.label}</span>
-                          <StatStepper name={`${f.key}_${p.id}`} defaultValue={record[f.key] ?? 0} />
-                        </div>
-                      ))}
-                    </div>
+            {/* Always mounted so every player's values submit, even when collapsed — only visually hidden */}
+            <div
+              style={{
+                display: isOpen ? "grid" : "none",
+                padding: "8px 20px 24px",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: "24px 40px",
+                borderTop: "1px solid #e3ded2",
+              }}
+            >
+              {MATCH_STAT_GROUPS.map((group) => (
+                <div key={group.title}>
+                  <h4
+                    style={{
+                      fontSize: "0.72rem",
+                      fontWeight: 600,
+                      color: "var(--pitch)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.03em",
+                      marginTop: 16,
+                      marginBottom: 10,
+                      paddingLeft: 10,
+                      borderLeft: `3px solid ${GROUP_COLORS[group.title] ?? "var(--pitch)"}`,
+                    }}
+                  >
+                    {group.title}
+                  </h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {group.fields.map((f) => (
+                      <div
+                        key={f.key}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 12,
+                        }}
+                      >
+                        <span style={{ fontSize: "0.82rem", opacity: 0.8 }}>{f.label}</span>
+                        <StatStepper name={`${f.key}_${p.id}`} defaultValue={record[f.key] ?? 0} />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
         );
       })}
