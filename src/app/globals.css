@@ -73,10 +73,15 @@ a {
 }
 
 .button.secondary {
-  background: transparent;
-  color: var(--pitch);
-  border: 1.5px solid #e3ded2;
+  background: #ffffff;
+  color: var(--pitch) !important;
+  border: 1.5px solid var(--pitch);
   border-radius: 8px;
+}
+
+.button.secondary:hover {
+  background: #f4f1ea;
+  color: var(--pitch-dark) !important;
 }
 
 .button.outline {
@@ -88,6 +93,7 @@ a {
 
 .button.outline:hover {
   background: white;
+  color: var(--pitch) !important;
   box-shadow: inset 0 0 0 1.5px var(--pitch);
 }
 
