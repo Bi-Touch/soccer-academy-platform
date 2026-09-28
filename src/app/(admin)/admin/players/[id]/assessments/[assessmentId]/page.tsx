@@ -22,7 +22,7 @@ export default async function AssessmentDetailPage({ params }: { params: { id: s
 
   return (
     <div>
-      <Link href={`/admin/players/${player.id}/assessments`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
+      <Link href={`/admin/players/${player.id}/reports`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
         &larr; All assessments
       </Link>
 

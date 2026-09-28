@@ -21,7 +21,7 @@ export default async function NewPhysicalTestPage({ params }: { params: { id: st
 
   return (
     <div>
-      <Link href={`/admin/players/${player.id}/physical-tests`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
+      <Link href={`/admin/players/${player.id}/reports`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
         &larr; {player.user.name}'s physical tests
       </Link>
 

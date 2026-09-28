@@ -16,13 +16,17 @@ export function ReportTabs({
   assessments,
   physical,
   matches,
+  labels,
+  defaultActive,
 }: {
   attendance: React.ReactNode;
   assessments: React.ReactNode;
   physical: React.ReactNode;
   matches: React.ReactNode;
+  labels?: Partial<Record<ReportKey, { title: string; body: string }>>;
+  defaultActive?: ReportKey;
 }) {
-  const [active, setActive] = useState<ReportKey | null>(null);
+  const [active, setActive] = useState<ReportKey | null>(defaultActive ?? null);
   const content: Record<ReportKey, React.ReactNode> = { attendance, assessments, physical, matches };
 
   return (
@@ -30,6 +34,7 @@ export function ReportTabs({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginTop: 32 }}>
         {REPORTS.map((r) => {
           const isActive = active === r.key;
+          const label = labels?.[r.key] ?? r;
           return (
             <button
               key={r.key}
@@ -50,8 +55,8 @@ export function ReportTabs({
                 fontFamily: "inherit",
               }}
             >
-              <h2 className="display" style={{ fontSize: "1.2rem", color: "var(--pitch)" }}>{r.title}</h2>
-              <p style={{ fontSize: "0.85rem", opacity: 0.7, marginTop: 8, lineHeight: 1.5 }}>{r.body}</p>
+              <h2 className="display" style={{ fontSize: "1.2rem", color: "var(--pitch)" }}>{label.title}</h2>
+              <p style={{ fontSize: "0.85rem", opacity: 0.7, marginTop: 8, lineHeight: 1.5 }}>{label.body}</p>
               <span style={{ fontSize: "0.8rem", color: "var(--pitch)", marginTop: 12, display: "inline-block" }}>
                 {isActive ? "− Hide" : "+ View report"}
               </span>

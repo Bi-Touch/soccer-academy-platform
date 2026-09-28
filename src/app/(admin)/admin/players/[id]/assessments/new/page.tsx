@@ -19,7 +19,7 @@ export default async function NewAssessmentPage({ params }: { params: { id: stri
 
   return (
     <div>
-      <Link href={`/admin/players/${player.id}/assessments`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
+      <Link href={`/admin/players/${player.id}/reports`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
         &larr; {player.user.name}'s assessments
       </Link>
 

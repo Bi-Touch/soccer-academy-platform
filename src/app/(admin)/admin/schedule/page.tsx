@@ -17,6 +17,7 @@ export default async function AdminSchedulePage() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>SCHEDULE</h1>
+        <Link href="/admin/schedule/import" className="button secondary">Import CSV</Link>
         <Link href="/admin/schedule/new" className="button">+ Add Event</Link>
       </div>
 

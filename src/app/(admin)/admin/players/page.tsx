@@ -62,10 +62,7 @@ export default async function AdminPlayersPage() {
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
               <Link href={`/admin/players/${p.id}/edit`} style={actionLinkStyle}>Edit</Link>
-              <Link href={`/admin/players/${p.id}/training`} style={actionLinkStyle}>Training</Link>
-              <Link href={`/admin/players/${p.id}/assessments`} style={actionLinkStyle}>Assessments</Link>
-              <Link href={`/admin/players/${p.id}/physical-tests`} style={actionLinkStyle}>Physical</Link>
-              <Link href={`/admin/players/${p.id}/match-stats`} style={actionLinkStyle}>Match Stats</Link>
+              <Link href={`/admin/players/${p.id}/reports`} style={actionLinkStyle}>Reports</Link>
               <form action={deletePlayer.bind(null, p.id)}>
                 <button
                   type="submit"
