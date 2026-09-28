@@ -53,11 +53,7 @@ export default async function TeamTrainingReportPage({ searchParams }: { searchP
               key={t.id}
               href={`/admin/training/reports?teamId=${t.id}`}
               className={t.id === activeTeamId ? "button" : "button secondary"}
-              style={{fontSize: "0.85rem", padding: "8px 16px", textDecoration: "none", borderRadius: 4, display: "inline-block",
-                     ...(t.id === activeTeamId
-                     ? { background: "var(--floodlight)", color: "var(--pitch-dark)", fontWeight: 600 }
-                     : { background: "transparent", color: "var(--pitch)", border: "1.5px solid #e3ded2" }),
-                    }}
+              style={{fontSize: "0.85rem", padding: "8px 16px", }}
             >
               {t.name}
             </Link>

@@ -48,7 +48,7 @@ export default async function ReportsHubPage({ searchParams }: { searchParams: {
             <Link
               key={t.id}
               href={`/admin/reports?teamId=${t.id}`}
-              style={{fontSize: "0.85rem", padding: "8px 16px", textDecoration: "none", borderRadius: 4,
+              style={{fontSize: "0.85rem", padding: "8px 16px", textDecoration: "none", borderRadius: 8,
                      ...(t.id === activeTeamId
                      ? { background: "var(--floodlight)", color: "var(--pitch-dark)", fontWeight: 600 }
                      : { background: "transparent", color: "var(--pitch)", border: "1.5px solid #e3ded2" }),
