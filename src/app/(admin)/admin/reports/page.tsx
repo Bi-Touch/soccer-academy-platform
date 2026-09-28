@@ -4,6 +4,7 @@ import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { BarChart } from "@/components/BarChart";
 import { ChartLegend } from "@/components/ChartLegend";
 import { ReportTabs } from "@/components/ReportTabs";
+import { playerName } from "@/lib/playerDisplay";
 import { DOMAINS, DOMAIN_LABELS } from "@/lib/assessmentAttributes";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
 
@@ -158,7 +159,7 @@ async function renderAttendance(teamId: string, squadSize: number) {
   );
 }
 
-async function renderAssessments(teamId: string, players: { id: string; user: { name: string } }[]) {
+async function renderAssessments(teamId: string, players: Array<{id: string; user: {name: string;} | null;}>) {
   type PlayerRow = { playerId: string; name: string; assessedAt: Date; domainAverages: Record<string, number> };
   const rows: PlayerRow[] = [];
 
@@ -177,7 +178,7 @@ async function renderAssessments(teamId: string, players: { id: string; user: { 
       const vals = byDomain[domain];
       domainAverages[domain] = vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : 0;
     }
-    rows.push({ playerId: player.id, name: player.user.name, assessedAt: latest.assessedAt, domainAverages });
+    rows.push({ playerId: player.id, name: playerName(player), assessedAt: latest.assessedAt, domainAverages });
   }
 
   if (rows.length === 0) {
@@ -241,7 +242,7 @@ async function renderAssessments(teamId: string, players: { id: string; user: { 
   );
 }
 
-async function renderPhysical(teamId: string, players: { id: string; user: { name: string } }[]) {
+async function renderPhysical(teamId: string, players: Array<{id: string; user: {name: string;} | null;}>) {
   const latestValues: Record<string, { name: string; value: number }[]> = {};
   for (const m of PHYSICAL_TEST_METRICS) latestValues[m.key] = [];
 
@@ -255,7 +256,7 @@ async function renderPhysical(teamId: string, players: { id: string; user: { nam
 
     for (const m of PHYSICAL_TEST_METRICS) {
       const result = latest.results.find((r) => r.metric === m.label);
-      if (result) latestValues[m.key].push({ name: player.user.name, value: result.value });
+      if (result) latestValues[m.key].push({ name: playerName(player), value: result.value });
     }
   }
 
@@ -314,7 +315,7 @@ async function renderMatches(teamId: string) {
   const playerTotals = new Map<string, { name: string; goals: number; assists: number; minutesPlayed: number; matches: number; yellowCards: number; redCards: number }>();
   for (const p of performances) {
     const existing = playerTotals.get(p.playerId) ?? {
-      name: p.player.user.name,
+      name: playerName(p.player),
       goals: 0,
       assists: 0,
       minutesPlayed: 0,

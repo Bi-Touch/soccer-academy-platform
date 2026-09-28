@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { createAssessment } from "../actions";
 import { AssessmentForm } from "@/components/AssessmentForm";
@@ -20,7 +21,7 @@ export default async function NewAssessmentPage({ params }: { params: { id: stri
   return (
     <div>
       <Link href={`/admin/players/${player.id}/reports`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
-        &larr; {player.user.name}'s assessments
+        &larr; {playerName(player)}'s assessments
       </Link>
 
       <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12, marginBottom: 24 }}>

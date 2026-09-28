@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { BarChart } from "@/components/BarChart";
 import { ChartLegend } from "@/components/ChartLegend";
@@ -46,7 +47,7 @@ export default async function AssessmentsPage({ params }: { params: { id: string
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
         <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)" }}>
-          {player.user.name.toUpperCase()} — ASSESSMENTS
+          {playerName(player).toUpperCase()} — ASSESSMENTS
         </h1>
         <Link href={`/admin/players/${player.id}/assessments/new`} className="button">+ New Assessment</Link>
       </div>

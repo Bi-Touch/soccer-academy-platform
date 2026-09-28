@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { saveAttendance } from "../actions";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
@@ -65,9 +66,9 @@ export default async function LogAttendancePage({ params }: { params: { eventId:
                   <tr key={p.id} style={{ borderBottom: "1px solid #e3ded2" }}>
                     <td style={cellStyle}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <PlayerAvatar src={p.photoUrl} alt={p.user.name} size={32} rounded />
+                        <PlayerAvatar src={p.photoUrl} alt={playerName(p)} size={32} rounded />
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{p.user.name}</div>
+                          <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{playerName(p)}</div>
                           <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>{p.position ?? "—"}</div>
                         </div>
                       </div>

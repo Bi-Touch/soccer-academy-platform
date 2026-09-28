@@ -75,7 +75,7 @@ export async function importMatchStats(formData: FormData): Promise<ImportResult
     }
 
     const email = (row.playerEmail || "").trim().toLowerCase();
-    const player = team.players.find((p) => p.user.email.toLowerCase() === email);
+    const player = team.players.find((p) => p.user?.email?.toLowerCase() === email);
     if (!player) {
       result.errors.push({ row: rowNum, message: `Player with email "${email}" not found on team "${team.name}".` });
       continue;

@@ -81,7 +81,8 @@ export async function notifyTeamOfNewEvent(teamId: string, teamName: string, eve
   });
   const when = startsAt.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
   await Promise.all(
-    players.map((p) => notify(p.user, `New ${teamName} schedule event`, `${eventTitle} — ${when}`, "/portal/schedule"))
+    players.filter((p): p is { user: Recipient } => p.user !== null)
+    .map((p) => notify(p.user, `New ${teamName} schedule event`, `${eventTitle} — ${when}`, "/portal/schedule"))
   );
 }
 
@@ -90,6 +91,6 @@ export async function notifyPlayerOfNewNote(playerId: string) {
     where: { id: playerId },
     select: { user: { select: recipientSelect } },
   });
-  if (!player) return;
+  if (!player?.user) return;
   await notify(player.user, "New coach note", "Your coach added a note to your profile.", "/portal/profile");
 }

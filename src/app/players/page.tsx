@@ -2,6 +2,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PlayerDirectory } from "@/components/PlayerDirectory";
 import { prisma } from "@/lib/prisma";
+import { playerName } from "@/lib/playerDisplay";
 
 export default async function PlayersPage() {
   const players = await prisma.player.findMany({
@@ -10,7 +11,7 @@ export default async function PlayersPage() {
 
   const rows = players.map((p) => ({
     id: p.id,
-    name: p.user.name,
+    name: playerName(p),
     position: p.position,
     shirtNumber: p.shirtNumber,
     photoUrl: p.photoUrl,

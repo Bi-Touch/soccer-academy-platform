@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { DOMAINS, DOMAIN_LABELS, DOMAIN_COLORS } from "@/lib/assessmentAttributes";
 
@@ -27,7 +28,7 @@ export default async function AssessmentDetailPage({ params }: { params: { id: s
       </Link>
 
       <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12 }}>
-        {player.user.name.toUpperCase()}
+        {playerName(player).toUpperCase()}
       </h1>
       <p style={{ opacity: 0.7, fontSize: "0.9rem", marginTop: 4 }}>
         {assessment.assessedAt.toLocaleDateString()}

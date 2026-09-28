@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { BarChart } from "@/components/BarChart";
 import { GroupedBarChart } from "@/components/GroupedBarChart";
@@ -66,7 +67,7 @@ export default async function PlayerMatchStatsPage({ params }: { params: { id: s
       <Link href="/admin/players" style={{ fontSize: "0.9rem", opacity: 0.7 }}>&larr; All players</Link>
 
       <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12 }}>
-        {player.user.name.toUpperCase()} — MATCH STATS
+        {playerName(player).toUpperCase()} — MATCH STATS
       </h1>
 
       {performances.length === 0 ? (

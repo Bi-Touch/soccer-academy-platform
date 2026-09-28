@@ -5,6 +5,7 @@ import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { saveMatchPerformance } from "../actions";
 import { MatchStatsForm } from "@/components/MatchStatsForm";
 import { MATCH_STAT_KEYS } from "@/lib/matchStats";
+import { playerName } from "@/lib/playerDisplay";
 
 export default async function LogMatchStatsPage({ params }: { params: { eventId: string } }) {
   const user = await getSessionUser();
@@ -25,7 +26,7 @@ export default async function LogMatchStatsPage({ params }: { params: { eventId:
 
   const players = event.team.players.map((p) => ({
     id: p.id,
-    name: p.user.name,
+    name: playerName(p),
     photoUrl: p.photoUrl,
     position: p.position,
   }));

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { playerName } from "@/lib/playerDisplay";
 import { deletePlayer } from "./actions";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
@@ -49,10 +50,10 @@ export default async function AdminPlayersPage() {
       <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
         {players.map((p) => (
           <div key={p.id} style={rowStyle}>
-            <PlayerAvatar src={p.photoUrl} alt={p.user.name} size={48} rounded />
+            <PlayerAvatar src={p.photoUrl} alt={playerName(p)} size={48} rounded />
 
             <div style={{ flex: "1 1 200px" }}>
-              <strong>{p.user.name}</strong>
+              <strong>{playerName(p)}</strong>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
                 <span style={tagStyle}>{p.team?.name ?? "No team"}</span>
                 {p.position && <span style={tagStyle}>{p.position}</span>}

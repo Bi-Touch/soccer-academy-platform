@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { BarChart } from "@/components/BarChart";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
@@ -37,7 +38,7 @@ export default async function PhysicalTestsPage({ params }: { params: { id: stri
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
         <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)" }}>
-          {player.user.name.toUpperCase()} — PHYSICAL TESTS
+          {playerName(player).toUpperCase()} — PHYSICAL TESTS
         </h1>
         <Link href={`/admin/players/${player.id}/physical-tests/new`} className="button">+ New Test</Link>
       </div>

@@ -9,11 +9,55 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ─────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────
+
 enum Role {
   ADMIN
   COACH
+  PARENT // NEW: parent/guardian login (one login per guardian)
   PLAYER
 }
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum RegistrationStatus {
+  PENDING
+  UNDER_REVIEW
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum EventType {
+  TRAINING
+  MATCH
+  DRILL
+  OTHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT_EXCUSED
+  ABSENT_UNEXCUSED
+  INJURED
+}
+
+enum AssessmentDomain {
+  TECHNICAL
+  TACTICAL
+  PHYSICAL
+  MENTAL
+}
+
+// ─────────────────────────────────────────────────────────────
+// Users, players, coaches, teams
+// ─────────────────────────────────────────────────────────────
 
 model User {
   id                 String   @id @default(cuid())
@@ -24,6 +68,7 @@ model User {
   createdAt          DateTime @default(now())
   player             Player?
   coach              Coach?
+  parentGuardian     ParentGuardian? // NEW: set when role = PARENT
   emailNotifications Boolean  @default(true)
   pushNotifications  Boolean  @default(false)
   pushSubscriptions  PushSubscription[]
@@ -40,24 +85,38 @@ model PushSubscription {
 }
 
 model Player {
-  id             String        @id @default(cuid())
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String        @unique
+  id             String   @id @default(cuid())
+
+  // NEW: name lives on Player itself so a player without a login
+  // (registered by a parent/guardian) still has a permanent name.
+  // Nullable until backfilled from user.name for existing rows.
+  name           String?
+
+  // CHANGED: optional — parent-registered players have no login of their own.
+  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String?  @unique
+
+  // NEW: ongoing parent/guardian relationship (the registration record
+  // is only the onboarding/audit trail, not the access-control link).
+  parentGuardian   ParentGuardian? @relation(fields: [parentGuardianId], references: [id])
+  parentGuardianId String?
+
   dateOfBirth    DateTime?
+  sex            Sex? // NEW: required for benchmark scoring (nullable until backfilled)
   position       String?
   shirtNumber    Int?
   photoUrl       String?
   bio            String?
 
-  team           Team?         @relation(fields: [teamId], references: [id])
+  team           Team?    @relation(fields: [teamId], references: [id])
   teamId         String?
 
-  stats          PlayerStat[]
-  progressNotes  ProgressNote[]
+  stats              PlayerStat[]
+  progressNotes      ProgressNote[]
   trainingAttendance TrainingAttendance[]
-  assessments    DevelopmentAssessment[]
-  physicalTests  PhysicalTest[]
-  matchPerformances MatchPerformance[]
+  assessments        DevelopmentAssessment[]
+  physicalTests      PhysicalTest[]
+  matchPerformances  MatchPerformance[]
 }
 
 model Coach {
@@ -72,15 +131,160 @@ model Coach {
 }
 
 model Team {
-  id          String    @id @default(cuid())
-  name        String
-  ageGroup    String
-  crestUrl    String?
-  players     Player[]
-  coaches     Coach[]
-  schedules   ScheduleEvent[]
-  videos      Video[]
-  photos      GalleryPhoto[]
+  id        String          @id @default(cuid())
+  name      String
+  ageGroup  String
+  crestUrl  String?
+  players   Player[]
+  coaches   Coach[]
+  schedules ScheduleEvent[]
+  videos    Video[]
+  photos    GalleryPhoto[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// Registration, guardians, consent  (NEW)
+// ─────────────────────────────────────────────────────────────
+
+model ParentGuardian {
+  id           String  @id @default(cuid())
+
+  // Set once a registration is approved and a PARENT login is created.
+  user         User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String? @unique
+
+  firstName    String
+  lastName     String
+  relationship String
+  phone        String
+  email        String
+  address      String?
+  idNumber     String?
+
+  players       Player[]
+  registrations PlayerRegistration[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PlayerRegistration {
+  id               String         @id @default(cuid())
+
+  parentGuardianId String
+  parentGuardian   ParentGuardian @relation(fields: [parentGuardianId], references: [id], onDelete: Cascade)
+
+  // Player information
+  firstName        String
+  lastName         String
+  dateOfBirth      DateTime
+  gender           String?
+  nationality      String?
+  position         String?
+  preferredFoot    String?
+  previousClub     String?
+  previousAcademy  String?
+
+  // Emergency / medical
+  emergencyName    String?
+  emergencyPhone   String?
+  medicalNotes     String?
+
+  status           RegistrationStatus @default(PENDING)
+
+  reviewedAt       DateTime?
+  reviewedById     String?
+  reviewNotes      String?
+
+  consent          ConsentRecord?
+
+  createdPlayerId  String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([parentGuardianId])
+}
+
+model ConsentRecord {
+  id             String             @id @default(cuid())
+
+  registrationId String             @unique
+  registration   PlayerRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  // Required
+  dataProcessing Boolean
+  statistics     Boolean
+
+  // Optional media
+  photography    Boolean
+  videoRecording Boolean
+  publicMedia    Boolean
+
+  // Football development / sharing
+  localScouting     Boolean
+  overseasAcademies Boolean
+  overseasClubs     Boolean
+  scouts            Boolean
+  agents            Boolean
+
+  // Parent declaration
+  guardianDeclaration Boolean
+
+  consentVersion String
+  consentedAt    DateTime
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// Player stats, notes
+// ─────────────────────────────────────────────────────────────
+
+model PlayerStat {
+  id            String   @id @default(cuid())
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId      String
+  season        String
+  matchesPlayed Int      @default(0)
+  goals         Int      @default(0)
+  assists       Int      @default(0)
+  minutesPlayed Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+model ProgressNote {
+  id         String   @id @default(cuid())
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId   String
+  authorName String
+  note       String
+  createdAt  DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// Schedule, media, content
+// ─────────────────────────────────────────────────────────────
+
+model ScheduleEvent {
+  id           String               @id @default(cuid())
+  team         Team                 @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId       String
+  type         EventType            @default(TRAINING)
+  title        String
+  description  String?
+  location     String?
+  startsAt     DateTime
+  endsAt       DateTime?
+  opponent     String?
+  homeScore    Int?
+  awayScore    Int?
+  attendance   TrainingAttendance[]
+  performances MatchPerformance[]
 }
 
 model GalleryPhoto {
@@ -90,51 +294,6 @@ model GalleryPhoto {
   team      Team?    @relation(fields: [teamId], references: [id])
   teamId    String?
   createdAt DateTime @default(now())
-}
-
-model PlayerStat {
-  id          String   @id @default(cuid())
-  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  playerId    String
-  season      String
-  matchesPlayed Int    @default(0)
-  goals       Int      @default(0)
-  assists     Int      @default(0)
-  minutesPlayed Int    @default(0)
-  updatedAt   DateTime @updatedAt
-}
-
-model ProgressNote {
-  id          String   @id @default(cuid())
-  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  playerId    String
-  authorName  String
-  note        String
-  createdAt   DateTime @default(now())
-}
-
-enum EventType {
-  TRAINING
-  MATCH
-  DRILL
-  OTHER
-}
-
-model ScheduleEvent {
-  id          String    @id @default(cuid())
-  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  teamId      String
-  type        EventType @default(TRAINING)
-  title       String
-  description String?
-  location    String?
-  startsAt    DateTime
-  endsAt      DateTime?
-  opponent    String?
-  homeScore   Int?
-  awayScore   Int?
-  attendance  TrainingAttendance[]
-  performances MatchPerformance[]
 }
 
 model ContactSubmission {
@@ -147,14 +306,14 @@ model ContactSubmission {
 }
 
 model Video {
-  id          String   @id @default(cuid())
-  team        Team?    @relation(fields: [teamId], references: [id])
-  teamId      String?
-  title       String
-  description String?
-  url         String
+  id           String   @id @default(cuid())
+  team         Team?    @relation(fields: [teamId], references: [id])
+  teamId       String?
+  title        String
+  description  String?
+  url          String
   thumbnailUrl String?
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 }
 
 model NewsPost {
@@ -167,43 +326,36 @@ model NewsPost {
   publishedAt DateTime @default(now())
 }
 
-enum AttendanceStatus {
-  PRESENT
-  LATE
-  ABSENT_EXCUSED
-  ABSENT_UNEXCUSED
-  INJURED
-}
+// ─────────────────────────────────────────────────────────────
+// Training attendance
+// ─────────────────────────────────────────────────────────────
 
 model TrainingAttendance {
-  id         String        @id @default(cuid())
-  event      ScheduleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id         String           @id @default(cuid())
+  event      ScheduleEvent    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId    String
-  player     Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  player     Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
   playerId   String
   status     AttendanceStatus @default(PRESENT)
   rating     Int?
   note       String?
   recordedBy String?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   @@unique([eventId, playerId])
   @@index([playerId])
 }
 
-enum AssessmentDomain {
-  TECHNICAL
-  TACTICAL
-  PHYSICAL
-  MENTAL
-}
+// ─────────────────────────────────────────────────────────────
+// Coach development assessments (Batch 1)
+// ─────────────────────────────────────────────────────────────
 
 model DevelopmentAssessment {
-  id         String   @id @default(cuid())
-  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  id         String            @id @default(cuid())
+  player     Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
   playerId   String
-  assessedAt DateTime @default(now())
+  assessedAt DateTime          @default(now())
   assessedBy String?
   summary    String?
   nextGoals  String?
@@ -223,13 +375,18 @@ model AssessmentScore {
   @@unique([assessmentId, attribute])
 }
 
+// ─────────────────────────────────────────────────────────────
+// Objective physical testing (Batch 2)
+// ─────────────────────────────────────────────────────────────
+
 model PhysicalTest {
-  id        String   @id @default(cuid())
-  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  playerId  String
-  testedAt  DateTime @default(now())
-  testedBy  String?
-  results   PhysicalTestResult[]
+  id       String               @id @default(cuid())
+  player   Player               @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId String
+  testedAt DateTime             @default(now())
+  testedBy String?
+  ageGroup String? // NEW: age group snapshot at test time (e.g. "U13")
+  results  PhysicalTestResult[]
 
   @@index([playerId, testedAt])
 }
@@ -239,37 +396,62 @@ model PhysicalTestResult {
   test     PhysicalTest @relation(fields: [testId], references: [id], onDelete: Cascade)
   testId   String
   metric   String
+  testCode String? // NEW: stable code, e.g. "10M_SPRINT", "CMJ", "YOYO_IR1"
   value    Float
   unit     String
 
+  score            Float? // NEW: 0–100 normalized score (null until a benchmark exists)
+  benchmarkVersion String? // NEW: which BenchmarkConfig version produced the score
+
   @@unique([testId, metric])
+  @@unique([testId, testCode])
 }
 
+// Admin-editable benchmark bands used to score physical tests.
+// One row per test + age group + sex + version.
+model BenchmarkConfig {
+  id            String   @id @default(cuid())
+  testCode      String
+  ageGroup      String
+  sex           Sex
+  version       String
+  minBenchmark  Float
+  maxBenchmark  Float
+  lowerIsBetter Boolean
+  createdAt     DateTime @default(now())
+
+  @@unique([testCode, ageGroup, sex, version])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Match performance
+// ─────────────────────────────────────────────────────────────
+
 model MatchPerformance {
-  id            String        @id @default(cuid())
-  event         ScheduleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId       String
-  player        Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  playerId      String
-  minutesPlayed Int           @default(0)
-  goals         Int           @default(0)
-  assists       Int           @default(0)
-  shots         Int           @default(0)
-  shotsOnTarget Int           @default(0)
-  passesAttempted Int         @default(0)
-  passesCompleted Int         @default(0)
-  keyPasses     Int           @default(0)
-  dribbles      Int           @default(0)
-  tackles       Int           @default(0)
-  interceptions Int           @default(0)
-  recoveries    Int           @default(0)
-  turnovers     Int           @default(0)
-  foulsCommitted Int          @default(0)
-  yellowCards   Int           @default(0)
-  redCards      Int           @default(0)
-  recordedBy    String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  event           ScheduleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId         String
+  player          Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId        String
+  minutesPlayed   Int           @default(0)
+  goals           Int           @default(0)
+  assists         Int           @default(0)
+  shots           Int           @default(0)
+  shotsOnTarget   Int           @default(0)
+  passesAttempted Int           @default(0)
+  passesCompleted Int           @default(0)
+  keyPasses       Int           @default(0)
+  dribbles        Int           @default(0)
+  tackles         Int           @default(0)
+  interceptions   Int           @default(0)
+  recoveries      Int           @default(0)
+  turnovers       Int           @default(0)
+  foulsCommitted  Int           @default(0)
+  yellowCards     Int           @default(0)
+  redCards        Int           @default(0)
+  recordedBy      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@unique([eventId, playerId])
   @@index([playerId])

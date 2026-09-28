@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { BarChart } from "@/components/BarChart";
 
@@ -60,7 +61,7 @@ export default async function PlayerTrainingReportPage({ params }: { params: { i
       <Link href="/admin/players" style={{ fontSize: "0.9rem", opacity: 0.7 }}>&larr; All players</Link>
 
       <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12 }}>
-        {player.user.name.toUpperCase()} — TRAINING REPORT
+        {playerName(player).toUpperCase()} — TRAINING REPORT
       </h1>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginTop: 24, maxWidth: 560 }}>

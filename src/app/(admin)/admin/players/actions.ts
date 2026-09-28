@@ -36,7 +36,7 @@ export async function createPlayer(formData: FormData) {
       passwordHash,
       role: "PLAYER",
       player: {
-        create: { position, shirtNumber, teamId, dateOfBirth, photoUrl },
+        create: { name, position, shirtNumber, teamId, dateOfBirth, photoUrl },
       },
     },
   });
@@ -62,10 +62,12 @@ export async function updatePlayer(playerId: string, formData: FormData) {
 
   await prisma.player.update({
     where: { id: playerId },
-    data: { position, shirtNumber, teamId, dateOfBirth, photoUrl },
+    data: { ...(name ? { name } : {}), position, shirtNumber, teamId, dateOfBirth, photoUrl },
   });
 
-  if (name) {
+  // Players registered by a parent/guardian have no login of their own,
+  // so only sync the name to a User record when one exists.
+  if (name && existingPlayer.userId) {
     await prisma.user.update({ where: { id: existingPlayer.userId }, data: { name } });
   }
 
@@ -79,7 +81,12 @@ export async function deletePlayer(playerId: string) {
   const player = await prisma.player.findUnique({ where: { id: playerId } });
   if (!player) return;
 
-  await prisma.user.delete({ where: { id: player.userId } }); // cascades to Player
+  if (player.userId) {
+    await prisma.user.delete({ where: { id: player.userId } }); // cascades to Player
+  } else {
+    await prisma.player.delete({ where: { id: player.id } });
+  }
+
   revalidatePath("/admin/players");
 }
 

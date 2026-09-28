@@ -3,6 +3,7 @@ import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { assignPlayerToTeam } from "../actions";
 import { redirect } from "next/navigation";
 import { computeAgeGroup } from "@/lib/age";
+import { playerName } from "@/lib/playerDisplay";
 import { AssignPlayerDirectory } from "@/components/AssignPlayerDirectory";
 
 export default async function AssignPlayerPage() {
@@ -18,7 +19,7 @@ export default async function AssignPlayerPage() {
 
   const rows = unassignedPlayers.map((p) => ({
     id: p.id,
-    name: p.user.name,
+    name: playerName(p),
     position: p.position,
     ageGroup: computeAgeGroup(p.dateOfBirth),
   }));
