@@ -21,8 +21,10 @@ export default async function TrainingListPage() {
 
   return (
     <div>
-      <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>TRAINING LOG</h1>
-      <Link href="/admin/training/import" className="button secondary">Import CSV</Link>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>TRAINING LOG</h1>
+        <Link href="/admin/training/import" className="button outline">Import CSV</Link>
+      </div>
       <p style={{ opacity: 0.7, marginTop: 4, fontSize: "0.9rem" }}>
         Record attendance for each training session. Sessions come from the schedule.
       </p>

@@ -22,7 +22,7 @@ export function DownloadCsvButton({
   }
 
   return (
-    <button type="button" onClick={handleDownload} className="button secondary" style={{ fontSize: "0.85rem" }}>
+    <button type="button" onClick={handleDownload} className="button outline sm" style={{ fontSize: "0.85rem" }}>
       {label ?? "Download CSV template"}
     </button>
   );

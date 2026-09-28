@@ -15,10 +15,12 @@ export default async function AdminSchedulePage() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>SCHEDULE</h1>
-        <Link href="/admin/schedule/import" className="button secondary">Import CSV</Link>
-        <Link href="/admin/schedule/new" className="button">+ Add Event</Link>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <Link href="/admin/schedule/import" className="button outline">Import CSV</Link>
+          <Link href="/admin/schedule/new" className="button">+ Add Event</Link>
+        </div>
       </div>
 
       <div style={{ overflowX: "auto" }}>

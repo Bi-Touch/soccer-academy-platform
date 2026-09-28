@@ -21,8 +21,10 @@ export default async function MatchesListPage() {
 
   return (
     <div>
-      <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>MATCH STATS</h1>
-      <Link href="/admin/matches/import" className="button secondary">Import CSV</Link>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>MATCH STATS</h1>
+        <Link href="/admin/matches/import" className="button outline">Import CSV</Link>
+      </div>
       <p style={{ opacity: 0.7, marginTop: 4, fontSize: "0.9rem" }}>
         Log individual player stats for each match. Matches come from the schedule.
       </p>
