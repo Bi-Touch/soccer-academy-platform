@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { createAssessment } from "../actions";
 import { AssessmentForm } from "@/components/AssessmentForm";
+import { playerName } from "@/lib/playerDisplay";
 
 export default async function NewAssessmentPage({ params }: { params: { id: string } }) {
   const user = await getSessionUser();
@@ -20,13 +20,14 @@ export default async function NewAssessmentPage({ params }: { params: { id: stri
 
   return (
     <div>
-      <Link href={`/admin/players/${player.id}/reports`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
-        &larr; {playerName(player)}'s assessments
+      <Link href="/admin/assessments" style={{ fontSize: "0.9rem", opacity: 0.7 }}>
+        &larr; All assessments
       </Link>
 
-      <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12, marginBottom: 24 }}>
+      <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12, marginBottom: 4 }}>
         NEW ASSESSMENT
       </h1>
+      <p style={{ opacity: 0.7, fontSize: "0.9rem", marginBottom: 24 }}>For {playerName(player)}</p>
 
       <AssessmentForm action={createWithId} />
     </div>

@@ -44,6 +44,7 @@ export async function createAssessment(playerId: string, formData: FormData) {
     },
   });
 
-  revalidatePath(`/admin/players/${playerId}/assessments`);
-  redirect(`/admin/players/${playerId}/assessments`);
+  revalidatePath(`/admin/players/${playerId}/reports`);
+  revalidatePath("/admin/assessments");
+  redirect(`/admin/players/${playerId}/reports`);
 }

@@ -41,6 +41,15 @@ export default async function NewPlayerPage() {
         </label>
 
         <label>
+          Sex
+          <select name="sex" defaultValue="" style={{ display: "block", width: "100%", padding: 10, marginTop: 4 }}>
+            <option value="">Not set</option>
+            <option value="MALE">Male</option>
+            <option value="FEMALE">Female</option>
+          </select>
+        </label>
+
+        <label>
           Photo URL
           <input name="photoUrl" placeholder="https://..." style={{ display: "block", width: "100%", padding: 10, marginTop: 4 }} />
         </label>

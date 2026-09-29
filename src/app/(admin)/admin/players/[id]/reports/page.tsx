@@ -67,7 +67,7 @@ export default async function PlayerReportsPage({ params }: { params: { id: stri
           matches: { title: "Match Stats", body: "Goals, assists, passing accuracy, and defensive actions per match." },
         }}
         attendance={await renderTraining(player.id)}
-        assessments={await renderAssessments(player)}
+        assessments={await renderAssessments(player.id)}
         physical={await renderPhysical(player.id)}
         matches={await renderMatches(player.id)}
       />
@@ -179,22 +179,15 @@ async function renderTraining(playerId: string) {
   );
 }
 
-async function renderAssessments(player: { id: string }) {
+async function renderAssessments(playerId: string) {
   const assessments = await prisma.developmentAssessment.findMany({
-    where: { playerId: player.id },
+    where: { playerId },
     include: { scores: true },
     orderBy: { assessedAt: "desc" },
   });
 
   if (assessments.length === 0) {
-    return (
-      <>
-        <p style={{ opacity: 0.7 }}>No assessments recorded yet.</p>
-        <Link href={`/admin/players/${player.id}/assessments/new`} className="button" style={{ marginTop: 16, display: "inline-block" }}>
-          + New Assessment
-        </Link>
-      </>
-    );
+    return <p style={{ opacity: 0.7 }}>No assessments recorded yet. Log one from Operations → Assessments.</p>;
   }
 
   const latest = assessments[0];
@@ -210,11 +203,7 @@ async function renderAssessments(player: { id: string }) {
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <Link href={`/admin/players/${player.id}/assessments/new`} className="button">+ New Assessment</Link>
-      </div>
-
-      <div style={{ marginTop: 16, maxWidth: 720 }}>
+      <div style={{ maxWidth: 720 }}>
         <div style={cardStyle}>
           <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
             LATEST DOMAIN AVERAGES &middot; {latest.assessedAt.toLocaleDateString()}
@@ -258,7 +247,7 @@ async function renderAssessments(player: { id: string }) {
               return (
                 <tr key={a.id} style={{ borderBottom: "1px solid #e3ded2", fontSize: "0.9rem" }}>
                   <td style={{ padding: "10px 16px" }}>
-                    <Link href={`/admin/players/${player.id}/assessments/${a.id}`}>{a.assessedAt.toLocaleDateString()}</Link>
+                    <Link href={`/admin/players/${playerId}/assessments/${a.id}`}>{a.assessedAt.toLocaleDateString()}</Link>
                   </td>
                   <td style={{ padding: "10px 16px" }}>{a.assessedBy ?? "—"}</td>
                   <td style={{ padding: "10px 16px" }}>{avgs[0].value || "—"}</td>
@@ -283,14 +272,7 @@ async function renderPhysical(playerId: string) {
   });
 
   if (tests.length === 0) {
-    return (
-      <>
-        <p style={{ opacity: 0.7 }}>No physical tests recorded yet.</p>
-        <Link href={`/admin/players/${playerId}/physical-tests/new`} className="button" style={{ marginTop: 16, display: "inline-block" }}>
-          + New Test
-        </Link>
-      </>
-    );
+    return <p style={{ opacity: 0.7 }}>No physical tests recorded yet. Log one from Operations → Physical Tests.</p>;
   }
 
   const metricSeries = PHYSICAL_TEST_METRICS.map((m) => {
@@ -309,11 +291,7 @@ async function renderPhysical(playerId: string) {
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <Link href={`/admin/players/${playerId}/physical-tests/new`} className="button">+ New Test</Link>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24, marginTop: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24 }}>
         {metricSeries.map(({ metric, points }) => {
           const latest = points.at(-1);
           return (

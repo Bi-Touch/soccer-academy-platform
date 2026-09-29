@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { SubmitButton } from "@/components/SubmitButton";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { createPhysicalTest } from "../actions";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
@@ -23,8 +24,8 @@ export default async function NewPhysicalTestPage({ params }: { params: { id: st
 
   return (
     <div>
-      <Link href={`/admin/players/${player.id}/reports`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
-        &larr; {playerName(player)}'s reports
+      <Link href="/admin/physical-tests" style={{ fontSize: "0.9rem", opacity: 0.7 }}>
+        &larr; All physical tests
       </Link>
 
       <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12, marginBottom: 24 }}>
@@ -62,7 +63,7 @@ export default async function NewPhysicalTestPage({ params }: { params: { id: st
         </div>
 
         <div style={{ position: "sticky", bottom: 0, background: "var(--chalk)", paddingTop: 16, marginTop: 24, borderTop: "1px solid #e3ded2" }}>
-          <button type="submit" className="button">Save test results</button>
+          <SubmitButton>Save test results</SubmitButton>
         </div>
       </form>
     </div>

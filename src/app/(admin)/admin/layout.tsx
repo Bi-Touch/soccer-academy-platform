@@ -106,6 +106,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <NavGroup id="group-operations" label="Operations" icon={ICONS.calendar}>
               <Link href="/admin/schedule" style={navLinkStyle}>Schedule</Link>
               <Link href="/admin/training" style={navLinkStyle}>Training Log</Link>
+              <Link href="/admin/assessments" style={navLinkStyle}>Assessments</Link>
+              <Link href="/admin/physical-tests" style={navLinkStyle}>Physical Tests</Link>
               <Link href="/admin/matches" style={navLinkStyle}>Match Stats</Link>
             </NavGroup>
 
