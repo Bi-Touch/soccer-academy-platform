@@ -2,10 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { updatePlayer, upsertPlayerStat, addProgressNote } from "../../actions";
 import { notFound } from "next/navigation";
 import { POSITIONS } from "@/lib/positions";
-import { playerName } from "@/lib/playerDisplay";
 import { CURRENT_SEASON } from "@/lib/season";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { EditPlayerTabs } from "@/components/EditPlayerTabs";
+import { playerName } from "@/lib/playerDisplay";
 
 export default async function EditPlayerPage({ params }: { params: { id: string } }) {
   const user = await getSessionUser();
@@ -40,6 +40,7 @@ export default async function EditPlayerPage({ params }: { params: { id: string 
       <EditPlayerTabs
         playerName={playerName(player)}
         dateOfBirth={dobValue}
+        sex={player.sex ?? ""}
         photoUrl={player.photoUrl ?? ""}
         position={player.position ?? ""}
         shirtNumber={player.shirtNumber}

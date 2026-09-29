@@ -40,6 +40,7 @@ const cardStyle: React.CSSProperties = {
 export function EditPlayerTabs({
   playerName,
   dateOfBirth,
+  sex,
   photoUrl: initialPhotoUrl,
   position,
   shirtNumber,
@@ -58,6 +59,7 @@ export function EditPlayerTabs({
 }: {
   playerName: string;
   dateOfBirth: string;
+  sex: string;
   photoUrl: string;
   position: string;
   shirtNumber: number | null;
@@ -139,6 +141,14 @@ export function EditPlayerTabs({
                 <input name="dateOfBirth" type="date" defaultValue={dateOfBirth} style={inputStyle} />
               </label>
               <label style={labelStyle}>
+                Sex
+                <select name="sex" defaultValue={sex} style={inputStyle}>
+                  <option value="">Not set</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                </select>
+              </label>
+              <label style={labelStyle}>
                 Position
                 <select name="position" defaultValue={position} style={inputStyle}>
                   <option value="">Select a position</option>
@@ -180,6 +190,10 @@ export function EditPlayerTabs({
               <div>
                 <p style={labelStyle}>Date of birth</p>
                 <p style={{ marginTop: 4 }}>{dateOfBirth || "—"}</p>
+              </div>
+              <div>
+                <p style={labelStyle}>Sex</p>
+                <p style={{ marginTop: 4 }}>{sex === "MALE" ? "Male" : sex === "FEMALE" ? "Female" : "—"}</p>
               </div>
               <div>
                 <p style={labelStyle}>Position</p>

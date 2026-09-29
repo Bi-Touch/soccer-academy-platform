@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { BarChart } from "@/components/BarChart";
 import { GroupedBarChart } from "@/components/GroupedBarChart";
@@ -10,6 +9,7 @@ import { ReportTabs } from "@/components/ReportTabs";
 import { DOMAINS, DOMAIN_LABELS } from "@/lib/assessmentAttributes";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
 import { MATCH_STAT_GROUPS } from "@/lib/matchStats";
+import { playerName } from "@/lib/playerDisplay";
 
 const cardStyle: React.CSSProperties = {
   background: "#fff",
@@ -295,11 +295,15 @@ async function renderPhysical(playerId: string) {
 
   const metricSeries = PHYSICAL_TEST_METRICS.map((m) => {
     const points = tests
-      .map((t) => ({
-        label: t.testedAt.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-        value: t.results.find((r) => r.metric === m.label)?.value,
-      }))
-      .filter((p): p is { label: string; value: number } => p.value !== undefined);
+      .map((t) => {
+        const result = t.results.find((r) => r.metric === m.label);
+        return {
+          label: t.testedAt.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+          value: result?.value,
+          score: result?.score ?? null,
+        };
+      })
+      .filter((p): p is { label: string; value: number; score: number | null } => p.value !== undefined);
     return { metric: m, points };
   }).filter((s) => s.points.length > 0);
 
@@ -310,20 +314,34 @@ async function renderPhysical(playerId: string) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24, marginTop: 16 }}>
-        {metricSeries.map(({ metric, points }) => (
-          <div key={metric.key} style={cardStyle}>
-            <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
-              {metric.label.toUpperCase()}
-            </h2>
-            <ChartLegend
-              items={[{
-                color: "var(--pitch)",
-                label: `${metric.unit} · ${metric.lowerIsBetter ? "lower is better" : "higher is better"}`,
-              }]}
-            />
-            <BarChart data={points} orientation="vertical" height={130} color="var(--pitch)" />
-          </div>
-        ))}
+        {metricSeries.map(({ metric, points }) => {
+          const latest = points.at(-1);
+          return (
+            <div key={metric.key} style={cardStyle}>
+              <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 4 }}>
+                {metric.label.toUpperCase()}
+              </h2>
+              {latest && (
+                latest.score != null ? (
+                  <p style={{ fontSize: "0.8rem", color: "var(--pitch)", fontWeight: 600, marginBottom: 4 }}>
+                    Latest score: {latest.score}/100
+                  </p>
+                ) : (
+                  <p style={{ fontSize: "0.75rem", color: "var(--card-red)", marginBottom: 4 }}>
+                    Not enough data to score (missing benchmark, sex, or date of birth)
+                  </p>
+                )
+              )}
+              <ChartLegend
+                items={[{
+                  color: "var(--pitch)",
+                  label: `${metric.unit} · ${metric.lowerIsBetter ? "lower is better" : "higher is better"}`,
+                }]}
+              />
+              <BarChart data={points} orientation="vertical" height={130} color="var(--pitch)" />
+            </div>
+          );
+        })}
       </div>
 
       <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginTop: 40, marginBottom: 12 }}>

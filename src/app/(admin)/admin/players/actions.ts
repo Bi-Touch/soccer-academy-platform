@@ -9,6 +9,11 @@ import { authOptions } from "@/lib/auth";
 import { notifyPlayerOfNewNote } from "@/lib/notifications";
 import { requireStaff, requireAdmin, getAccessibleTeamIds, assertTeamAccess } from "@/lib/permissions";
 
+function parseSex(formData: FormData): "MALE" | "FEMALE" | null {
+  const raw = String(formData.get("sex") || "").trim();
+  return raw === "MALE" || raw === "FEMALE" ? raw : null;
+}
+
 export async function createPlayer(formData: FormData) {
   await requireAdmin();
 
@@ -22,6 +27,7 @@ export async function createPlayer(formData: FormData) {
   const dateOfBirthRaw = String(formData.get("dateOfBirth") || "").trim();
   const dateOfBirth = dateOfBirthRaw ? new Date(dateOfBirthRaw) : null;
   const photoUrl = String(formData.get("photoUrl") || "").trim() || null;
+  const sex = parseSex(formData);
 
   if (!name || !email || !password) {
     throw new Error("Name, email, and password are required.");
@@ -36,7 +42,7 @@ export async function createPlayer(formData: FormData) {
       passwordHash,
       role: "PLAYER",
       player: {
-        create: { name, position, shirtNumber, teamId, dateOfBirth, photoUrl },
+        create: { name, position, shirtNumber, teamId, dateOfBirth, photoUrl, sex },
       },
     },
   });
@@ -59,14 +65,13 @@ export async function updatePlayer(playerId: string, formData: FormData) {
   const dateOfBirthRaw = String(formData.get("dateOfBirth") || "").trim();
   const dateOfBirth = dateOfBirthRaw ? new Date(dateOfBirthRaw) : null;
   const photoUrl = String(formData.get("photoUrl") || "").trim() || null;
+  const sex = parseSex(formData);
 
   await prisma.player.update({
     where: { id: playerId },
-    data: { ...(name ? { name } : {}), position, shirtNumber, teamId, dateOfBirth, photoUrl },
+    data: { ...(name ? { name } : {}), position, shirtNumber, teamId, dateOfBirth, photoUrl, sex },
   });
 
-  // Players registered by a parent/guardian have no login of their own,
-  // so only sync the name to a User record when one exists.
   if (name && existingPlayer.userId) {
     await prisma.user.update({ where: { id: existingPlayer.userId }, data: { name } });
   }
@@ -86,7 +91,6 @@ export async function deletePlayer(playerId: string) {
   } else {
     await prisma.player.delete({ where: { id: player.id } });
   }
-
   revalidatePath("/admin/players");
 }
 

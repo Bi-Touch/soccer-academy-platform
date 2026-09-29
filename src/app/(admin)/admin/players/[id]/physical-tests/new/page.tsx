@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { createPhysicalTest } from "../actions";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
+import { playerName } from "@/lib/playerDisplay";
 
 export default async function NewPhysicalTestPage({ params }: { params: { id: string } }) {
   const user = await getSessionUser();
@@ -19,16 +19,25 @@ export default async function NewPhysicalTestPage({ params }: { params: { id: st
   const createWithId = createPhysicalTest.bind(null, player.id);
   const today = new Date().toISOString().slice(0, 10);
   const inputStyle = { display: "block", width: "100%", padding: 10, marginTop: 4 };
+  const canScore = Boolean(player.dateOfBirth && player.sex);
 
   return (
     <div>
       <Link href={`/admin/players/${player.id}/reports`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
-        &larr; {playerName(player)}'s physical tests
+        &larr; {playerName(player)}'s reports
       </Link>
 
       <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12, marginBottom: 24 }}>
         NEW PHYSICAL TEST
       </h1>
+
+      {!canScore && (
+        <div style={{ background: "#fdf3e2", border: "1px solid var(--floodlight)", borderRadius: 8, padding: 16, marginBottom: 24, maxWidth: 480 }}>
+          <p style={{ fontSize: "0.85rem", color: "var(--pitch)" }}>
+            {playerName(player)} is missing a date of birth and/or sex, so results saved here won't be scored against benchmarks yet. Add both under Edit Player to enable scoring.
+          </p>
+        </div>
+      )}
 
       <form action={createWithId} style={{ maxWidth: 480, paddingBottom: 88 }}>
         <label style={{ fontSize: "0.85rem" }}>
