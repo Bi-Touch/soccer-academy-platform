@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { UserMenu } from "@/components/UserMenu";
+import { MobileNavReset } from "@/components/MobileNavReset";
 
 const ROLE_LABEL: Record<string, string> = {
   PLAYER: "Player",
@@ -20,26 +21,32 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      <aside style={{ width: 220, background: "var(--pitch-dark)", color: "var(--chalk)", padding: 24, position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
-        <div className="display" style={{ fontSize: "1.4rem", marginBottom: 32 }}>ACADEMY</div>
-        <nav style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: "0.95rem" }}>
-          <Link href="/portal/dashboard" style={{ textDecoration: "none" }}>Dashboard</Link>
-          <Link href="/portal/profile" style={{ textDecoration: "none" }}>My Profile</Link>
-          <Link href="/portal/schedule" style={{ textDecoration: "none" }}>Schedule</Link>
-          <Link href="/portal/videos" style={{ textDecoration: "none" }}>Videos</Link>
-          <Link href="/portal/settings" style={{ textDecoration: "none" }}>Settings</Link>
-          <Link href="/portal/leaderboard" style={{ textDecoration: "none" }}>Leaderboard</Link>
-          {(role === "ADMIN" || role === "COACH") && (
-            <Link href="/admin/players" style={{ textDecoration: "none", opacity: 0.8 }}>&larr; Staff Admin</Link>
-          )}
-        </nav>
-      </aside>
+      <MobileNavReset>
+        <input type="checkbox" id="nav-toggle" className="nav-toggle-checkbox" />
+        <label htmlFor="nav-toggle" className="nav-overlay" aria-hidden="true" />
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <aside className="admin-sidebar" style={{ background: "var(--pitch-dark)" }}>
+          <div className="display" style={{ fontSize: "1.4rem", marginBottom: 32 }}>ACADEMY</div>
+          <nav style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: "0.95rem" }}>
+            <Link href="/portal/dashboard" style={{ textDecoration: "none" }}>Dashboard</Link>
+            <Link href="/portal/profile" style={{ textDecoration: "none" }}>My Profile</Link>
+            <Link href="/portal/schedule" style={{ textDecoration: "none" }}>Schedule</Link>
+            <Link href="/portal/videos" style={{ textDecoration: "none" }}>Videos</Link>
+            <Link href="/portal/settings" style={{ textDecoration: "none" }}>Settings</Link>
+            <Link href="/portal/leaderboard" style={{ textDecoration: "none" }}>Leaderboard</Link>
+            {(role === "ADMIN" || role === "COACH") && (
+              <Link href="/admin/players" style={{ textDecoration: "none", opacity: 0.8 }}>&larr; Staff Admin</Link>
+            )}
+          </nav>
+        </aside>
+      </MobileNavReset>
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <header
+          className="admin-header"
           style={{
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "flex-start",
             alignItems: "center",
             padding: "14px 40px",
             borderBottom: "1px solid #e3ded2",
@@ -49,14 +56,21 @@ export default async function PortalLayout({ children }: { children: React.React
             zIndex: 20,
           }}
         >
-          <UserMenu
-            name={session?.user?.name ?? ""}
-            role={role ? ROLE_LABEL[role] : undefined}
-            photoUrl={player?.photoUrl}
-          />
+          <label htmlFor="nav-toggle" className="nav-toggle-label" aria-label="Toggle menu">
+            &#9776;
+          </label>
+          <div style={{ marginLeft: "auto" }}>
+            <UserMenu
+              name={session?.user?.name ?? ""}
+              role={role ? ROLE_LABEL[role] : undefined}
+              photoUrl={player?.photoUrl}
+            />
+          </div>
         </header>
 
-        <main style={{ flex: 1, padding: 40, background: "var(--chalk)" }}>{children}</main>
+        <main className="admin-main" style={{ flex: 1, padding: 40, background: "var(--chalk)", minWidth: 0 }}>
+          {children}
+        </main>
       </div>
     </div>
   );
