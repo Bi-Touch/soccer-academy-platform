@@ -124,6 +124,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
             {isAdmin && (
               <NavGroup id="group-admin" label="Admin" icon={ICONS.shield}>
+                <Link href="/admin/registrations" style={navLinkStyle}>Registrations</Link>
                 <Link href="/admin/enquiries" style={navLinkStyle}>Enquiries</Link>
               </NavGroup>
             )}

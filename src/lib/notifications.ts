@@ -53,7 +53,7 @@ async function sendPush(recipient: Recipient, title: string, body: string, url: 
   );
 }
 
-async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(to: string, subject: string, html: string) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return console.error("RESEND_API_KEY not set — skipped email to", to);
 
@@ -93,4 +93,27 @@ export async function notifyPlayerOfNewNote(playerId: string) {
   });
   if (!player?.user) return;
   await notify(player.user, "New coach note", "Your coach added a note to your profile.", "/portal/profile");
+}
+
+export async function sendRegistrationApprovedEmail(guardianEmail: string, guardianName: string, playerName: string, loginEmail: string, tempPassword: string) {
+  await sendEmail(
+    guardianEmail,
+    "Your Academy registration has been approved",
+    `<p>Hi ${guardianName},</p>
+     <p>Great news — ${playerName}'s registration has been approved.</p>
+     <p>You can now log in to the parent portal using:</p>
+     <p><strong>Email:</strong> ${loginEmail}<br/><strong>Temporary password:</strong> ${tempPassword}</p>
+     <p>Please log in and change your password as soon as possible.</p>
+     <p><a href="${process.env.NEXTAUTH_URL || ""}/login">Log in</a></p>`
+  );
+}
+
+export async function sendPlayerAddedEmail(guardianEmail: string, guardianName: string, playerName: string) {
+  await sendEmail(
+    guardianEmail,
+    "A player has been added to your Academy account",
+    `<p>Hi ${guardianName},</p>
+     <p>${playerName}'s registration has been approved and added to your existing Academy account.</p>
+     <p><a href="${process.env.NEXTAUTH_URL || ""}/login">Log in</a> to view their profile.</p>`
+  );
 }
