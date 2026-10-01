@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export type SessionUser = { id: string; role: "ADMIN" | "COACH" | "PLAYER" };
+export type SessionUser = { id: string; role: "ADMIN" | "COACH" | "PARENT" | "PLAYER" };
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   const session = await getServerSession(authOptions);

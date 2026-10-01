@@ -28,12 +28,22 @@ export default async function PortalLayout({ children }: { children: React.React
         <aside className="admin-sidebar" style={{ background: "var(--pitch-dark)" }}>
           <div className="display" style={{ fontSize: "1.4rem", marginBottom: 32 }}>ACADEMY</div>
           <nav style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: "0.95rem" }}>
-            <Link href="/portal/dashboard" style={{ textDecoration: "none" }}>Dashboard</Link>
-            <Link href="/portal/profile" style={{ textDecoration: "none" }}>My Profile</Link>
-            <Link href="/portal/schedule" style={{ textDecoration: "none" }}>Schedule</Link>
-            <Link href="/portal/videos" style={{ textDecoration: "none" }}>Videos</Link>
-            <Link href="/portal/settings" style={{ textDecoration: "none" }}>Settings</Link>
-            <Link href="/portal/leaderboard" style={{ textDecoration: "none" }}>Leaderboard</Link>
+            
+            {role === "PARENT" ? (
+              <>
+                <Link href="/portal/parent" style={{ textDecoration: "none" }}>My Children</Link>
+                <Link href="/portal/settings" style={{ textDecoration: "none" }}>Settings</Link>
+              </>
+            ) : (
+              <>
+                <Link href="/portal/dashboard" style={{ textDecoration: "none" }}>Dashboard</Link>
+                <Link href="/portal/profile" style={{ textDecoration: "none" }}>My Profile</Link>
+                <Link href="/portal/schedule" style={{ textDecoration: "none" }}>Schedule</Link>
+                <Link href="/portal/videos" style={{ textDecoration: "none" }}>Videos</Link>
+                <Link href="/portal/settings" style={{ textDecoration: "none" }}>Settings</Link>
+                <Link href="/portal/leaderboard" style={{ textDecoration: "none" }}>Leaderboard</Link>
+              </>
+            )}
             {(role === "ADMIN" || role === "COACH") && (
               <Link href="/admin/players" style={{ textDecoration: "none", opacity: 0.8 }}>&larr; Staff Admin</Link>
             )}

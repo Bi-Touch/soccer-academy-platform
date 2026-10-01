@@ -2,13 +2,32 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "var(--floodlight)",
-  UNDER_REVIEW: "var(--floodlight)",
-  CHANGES_REQUESTED: "var(--card-red)",
-  APPROVED: "var(--pitch)",
-  REJECTED: "var(--card-red)",
+const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
+  PENDING: { bg: "#fdf3e2", fg: "var(--floodlight)" },
+  UNDER_REVIEW: { bg: "#fdf3e2", fg: "var(--floodlight)" },
+  CHANGES_REQUESTED: { bg: "#fdecec", fg: "var(--card-red)" },
+  APPROVED: { bg: "#e7f3ed", fg: "var(--pitch)" },
+  REJECTED: { bg: "#fdecec", fg: "var(--card-red)" },
 };
+
+function StatusPill({ status }: { status: string }) {
+  const style = STATUS_PILL[status] ?? { bg: "#eee", fg: "#555" };
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        background: style.bg,
+        color: style.fg,
+        fontWeight: 600,
+        fontSize: "0.8rem",
+        padding: "4px 12px",
+        borderRadius: 999,
+      }}
+    >
+      {status.replace("_", " ")}
+    </span>
+  );
+}
 
 export default async function AdminRegistrationsPage() {
   await requireAdmin();
@@ -39,11 +58,7 @@ export default async function AdminRegistrationsPage() {
                 <td style={{ padding: "10px 0" }}>{r.firstName} {r.lastName}</td>
                 <td>{r.parentGuardian.firstName} {r.parentGuardian.lastName}</td>
                 <td>{r.createdAt.toLocaleDateString()}</td>
-                <td>
-                  <span style={{ color: STATUS_COLORS[r.status], fontWeight: 600, fontSize: "0.85rem" }}>
-                    {r.status.replace("_", " ")}
-                  </span>
-                </td>
+                <td><StatusPill status={r.status} /></td>
                 <td style={{ textAlign: "right" }}>
                   <Link href={`/admin/registrations/${r.id}`} style={{ fontSize: "0.9rem" }}>View</Link>
                 </td>

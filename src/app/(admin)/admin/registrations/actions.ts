@@ -73,7 +73,11 @@ export async function approveRegistration(registrationId: string) {
   }
 
   revalidatePath("/admin/registrations");
-  redirect("/admin/registrations");
+
+  if (tempPassword) {
+    redirect(`/admin/registrations/${registration.id}?tempPassword=${encodeURIComponent(tempPassword)}`);
+  }
+  redirect(`/admin/registrations/${registration.id}`);
 }
 
 export async function rejectRegistration(registrationId: string, formData: FormData) {
@@ -100,4 +104,25 @@ export async function requestChanges(registrationId: string, formData: FormData)
 
   revalidatePath("/admin/registrations");
   redirect("/admin/registrations");
+}
+
+export async function resetGuardianPassword(guardianId: string) {
+  await requireAdmin();
+
+  const guardian = await prisma.parentGuardian.findUnique({ where: { id: guardianId } });
+  if (!guardian) throw new Error("Guardian not found.");
+
+  const tempPassword = generateTempPassword();
+  const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+  if (guardian.userId) {
+    await prisma.user.update({ where: { id: guardian.userId }, data: { passwordHash } });
+  } else {
+    const user = await prisma.user.create({
+      data: { email: guardian.email, passwordHash, name: `${guardian.firstName} ${guardian.lastName}`, role: "PARENT" },
+    });
+    await prisma.parentGuardian.update({ where: { id: guardian.id }, data: { userId: user.id } });
+  }
+
+  redirect(`/admin/registrations?resetGuardianEmail=${encodeURIComponent(guardian.email)}&tempPassword=${encodeURIComponent(tempPassword)}`);
 }

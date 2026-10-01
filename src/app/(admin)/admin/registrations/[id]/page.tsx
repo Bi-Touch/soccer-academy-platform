@@ -2,11 +2,44 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/permissions";
-import { approveRegistration, rejectRegistration, requestChanges } from "../actions";
+import { approveRegistration, rejectRegistration, requestChanges, resetGuardianPassword } from "../actions";
 
 const cardStyle: React.CSSProperties = { background: "#fff", border: "1px solid #e3ded2", borderRadius: 8, padding: 20, marginBottom: 20 };
 
-export default async function RegistrationDetailPage({ params }: { params: { id: string } }) {
+const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
+  PENDING: { bg: "#fdf3e2", fg: "var(--floodlight)" },
+  UNDER_REVIEW: { bg: "#fdf3e2", fg: "var(--floodlight)" },
+  CHANGES_REQUESTED: { bg: "#fdecec", fg: "var(--card-red)" },
+  APPROVED: { bg: "#e7f3ed", fg: "var(--pitch)" },
+  REJECTED: { bg: "#fdecec", fg: "var(--card-red)" },
+};
+
+function StatusPill({ status }: { status: string }) {
+  const style = STATUS_PILL[status] ?? { bg: "#eee", fg: "#555" };
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        background: style.bg,
+        color: style.fg,
+        fontWeight: 600,
+        fontSize: "0.8rem",
+        padding: "4px 12px",
+        borderRadius: 999,
+      }}
+    >
+      {status.replace("_", " ")}
+    </span>
+  );
+}
+
+export default async function RegistrationDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { tempPassword?: string };
+}) {
   await requireAdmin();
 
   const registration = await prisma.playerRegistration.findUnique({
@@ -18,6 +51,7 @@ export default async function RegistrationDetailPage({ params }: { params: { id:
   const approveWithId = approveRegistration.bind(null, registration.id);
   const rejectWithId = rejectRegistration.bind(null, registration.id);
   const requestChangesWithId = requestChanges.bind(null, registration.id);
+  const resetPasswordWithId = resetGuardianPassword.bind(null, registration.parentGuardian.id);
   const g = registration.parentGuardian;
   const c = registration.consent;
 
@@ -25,15 +59,36 @@ export default async function RegistrationDetailPage({ params }: { params: { id:
     <div style={{ maxWidth: 640 }}>
       <Link href="/admin/registrations" style={{ fontSize: "0.9rem", opacity: 0.7 }}>&larr; All registrations</Link>
 
-      <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12, marginBottom: 4 }}>
+      <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12, marginBottom: 8 }}>
         {registration.firstName.toUpperCase()} {registration.lastName.toUpperCase()}
       </h1>
-      <p style={{ opacity: 0.7, fontSize: "0.9rem", marginBottom: 24 }}>Status: {registration.status.replace("_", " ")}</p>
+      <div style={{ marginBottom: 24 }}>
+        <StatusPill status={registration.status} />
+      </div>
+
+      {searchParams.tempPassword && (
+        <div style={{ background: "#fdf3e2", border: "1px solid var(--floodlight)", borderRadius: 8, padding: 20, marginBottom: 20 }}>
+          <p style={{ fontWeight: 600, color: "var(--pitch)", marginBottom: 8 }}>
+            Account created — share these credentials with the guardian
+          </p>
+          <p style={{ fontSize: "0.9rem", marginBottom: 4 }}><strong>Email:</strong> {g.email}</p>
+          <p style={{ fontSize: "0.9rem", marginBottom: 8 }}><strong>Temporary password:</strong> {searchParams.tempPassword}</p>
+          <p style={{ fontSize: "0.8rem", opacity: 0.7 }}>
+            This password is shown once and is not stored anywhere — if you navigate away, it cannot be retrieved again.
+            Ask the guardian to change it after their first login.
+          </p>
+        </div>
+      )}
 
       <div style={cardStyle}>
         <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 8 }}>GUARDIAN</h2>
         <p>{g.firstName} {g.lastName} — {g.relationship}</p>
         <p style={{ opacity: 0.75, fontSize: "0.9rem" }}>{g.phone} &middot; {g.email}</p>
+        <div style={{ marginTop: 12 }}>
+          <form action={resetPasswordWithId}>
+            <button type="submit" className="button secondary">Get / Reset Guardian Password</button>
+          </form>
+        </div>
       </div>
 
       <div style={cardStyle}>
