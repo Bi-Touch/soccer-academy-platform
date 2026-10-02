@@ -3,35 +3,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/permissions";
 import { approveRegistration, rejectRegistration, requestChanges, resetGuardianPassword } from "../actions";
+import { StatusPill } from "@/components/StatusPill";
 
 const cardStyle: React.CSSProperties = { background: "#fff", border: "1px solid #e3ded2", borderRadius: 8, padding: 20, marginBottom: 20 };
-
-const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
-  PENDING: { bg: "#fdf3e2", fg: "var(--floodlight)" },
-  UNDER_REVIEW: { bg: "#fdf3e2", fg: "var(--floodlight)" },
-  CHANGES_REQUESTED: { bg: "#fdecec", fg: "var(--card-red)" },
-  APPROVED: { bg: "#e7f3ed", fg: "var(--pitch)" },
-  REJECTED: { bg: "#fdecec", fg: "var(--card-red)" },
-};
-
-function StatusPill({ status }: { status: string }) {
-  const style = STATUS_PILL[status] ?? { bg: "#eee", fg: "#555" };
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        background: style.bg,
-        color: style.fg,
-        fontWeight: 600,
-        fontSize: "0.8rem",
-        padding: "4px 12px",
-        borderRadius: 999,
-      }}
-    >
-      {status.replace("_", " ")}
-    </span>
-  );
-}
 
 export default async function RegistrationDetailPage({
   params,

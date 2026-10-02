@@ -25,7 +25,6 @@ export default function PlayerRegistrationForm() {
     startTransition(async () => {
       const res = await submitPlayerRegistration(data);
       if (res && "error" in res) setError(res.error);
-      // on success the server action redirects; nothing else to do here
     });
   }
 
@@ -38,21 +37,48 @@ export default function PlayerRegistrationForm() {
         Parent/guardian registration for Academy players. No account is created until your registration is reviewed.
       </p>
 
-      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #e3ded2", marginBottom: 24 }}>
+      <div style={{ display: "flex", borderBottom: "1px solid #e3ded2", marginBottom: 24 }}>
         {STEPS.map((label, i) => (
           <div
             key={label}
             style={{
               flex: 1,
-              textAlign: "center",
-              padding: "10px 8px",
-              fontSize: "0.85rem",
-              fontWeight: i === step ? 600 : 400,
-              color: i <= step ? "var(--pitch)" : "#999",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 6,
+              padding: "10px 4px",
               borderBottom: i === step ? "2px solid var(--floodlight)" : "2px solid transparent",
             }}
           >
-            {i + 1}. {label}
+            <span
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                background: i <= step ? "var(--pitch)" : "#e3ded2",
+                color: i <= step ? "white" : "#777",
+                flexShrink: 0,
+              }}
+            >
+              {i + 1}
+            </span>
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: i === step ? 600 : 400,
+                color: i <= step ? "var(--pitch)" : "#999",
+                textAlign: "center",
+                lineHeight: 1.2,
+              }}
+            >
+              {label}
+            </span>
           </div>
         ))}
       </div>

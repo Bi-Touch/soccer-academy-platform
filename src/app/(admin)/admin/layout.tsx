@@ -56,6 +56,15 @@ function ChevronIcon() {
   );
 }
 
+function SidebarToggleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="10" y1="4" x2="10" y2="20" />
+    </svg>
+  );
+}
+
 const ICONS = {
   users: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>,
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></>,
@@ -93,8 +102,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <input type="checkbox" id="nav-toggle" className="nav-toggle-checkbox" />
         <label htmlFor="nav-toggle" className="nav-overlay" aria-hidden="true" />
 
+        <input type="checkbox" id="sidebar-collapse" className="sidebar-collapse-checkbox" />
+
         <aside className="admin-sidebar">
-          <div className="display" style={{ fontSize: "1.4rem", marginBottom: 32 }}>STAFF</div>
+          <label htmlFor="sidebar-collapse" className="sidebar-toggle-label" aria-label="Toggle sidebar width">
+            <SidebarToggleIcon />
+          </label>
+
+          <div className="display sidebar-brand-text" style={{ fontSize: "1.4rem", marginBottom: 32 }}>STAFF</div>
 
           <nav style={{ display: "flex", flexDirection: "column", gap: 22 }}>
             <NavGroup id="group-roster" label="Roster" icon={ICONS.users}>
@@ -130,8 +145,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             )}
 
             <div style={{ paddingTop: 8, borderTop: "1px solid rgba(245, 243, 238, 0.14)" }}>
-              <Link href="/portal/dashboard" style={{ ...navLinkStyle, opacity: 0.8 }}>
-                &larr; Player Portal
+              <Link href="/portal/dashboard" className="sidebar-footer-link" style={{ ...navLinkStyle, opacity: 0.8 }}>
+                <span className="sidebar-footer-link-text">&larr; Player Portal</span>
               </Link>
             </div>
           </nav>

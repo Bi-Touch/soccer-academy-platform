@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { playerName } from "@/lib/playerDisplay";
 import { deletePlayer } from "./actions";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
+import { playerName } from "@/lib/playerDisplay";
+import { SearchableList } from "@/components/SearchableList";
 
 const tagStyle: React.CSSProperties = {
   fontSize: "0.75rem",
@@ -36,6 +37,33 @@ export default async function AdminPlayersPage() {
     orderBy: { user: { name: "asc" } },
   });
 
+  const items = players.map((p) => ({
+    id: p.id,
+    label: `${playerName(p)} ${p.team?.name ?? ""} ${p.position ?? ""}`,
+    node: (
+      <div style={rowStyle}>
+        <PlayerAvatar src={p.photoUrl} alt={playerName(p)} size={48} rounded />
+        <div style={{ flex: "1 1 200px" }}>
+          <strong>{playerName(p)}</strong>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+            <span style={tagStyle}>{p.team?.name ?? "No team"}</span>
+            {p.position && <span style={tagStyle}>{p.position}</span>}
+            {p.shirtNumber != null && <span style={tagStyle}>#{p.shirtNumber}</span>}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
+          <Link href={`/admin/players/${p.id}/edit`} style={actionLinkStyle}>Edit</Link>
+          <Link href={`/admin/players/${p.id}/reports`} style={actionLinkStyle}>Reports</Link>
+          <form action={deletePlayer.bind(null, p.id)}>
+            <button type="submit" style={{ background: "none", border: "none", color: "var(--card-red)", cursor: "pointer", fontSize: "0.9rem", padding: 0 }}>
+              Remove
+            </button>
+          </form>
+        </div>
+      </div>
+    ),
+  }));
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -47,41 +75,16 @@ export default async function AdminPlayersPage() {
         )}
       </div>
 
-      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-        {players.map((p) => (
-          <div key={p.id} style={rowStyle}>
-            <PlayerAvatar src={p.photoUrl} alt={playerName(p)} size={48} rounded />
-
-            <div style={{ flex: "1 1 200px" }}>
-              <strong>{playerName(p)}</strong>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                <span style={tagStyle}>{p.team?.name ?? "No team"}</span>
-                {p.position && <span style={tagStyle}>{p.position}</span>}
-                {p.shirtNumber != null && <span style={tagStyle}>#{p.shirtNumber}</span>}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
-              <Link href={`/admin/players/${p.id}/edit`} style={actionLinkStyle}>Edit</Link>
-              <Link href={`/admin/players/${p.id}/reports`} style={actionLinkStyle}>Reports</Link>
-              <form action={deletePlayer.bind(null, p.id)}>
-                <button
-                  type="submit"
-                  style={{ background: "none", border: "none", color: "var(--card-red)", cursor: "pointer", fontSize: "0.9rem", padding: 0 }}
-                >
-                  Remove
-                </button>
-              </form>
-            </div>
-          </div>
-        ))}
-        {players.length === 0 && (
-          <p style={{ opacity: 0.7 }}>
-            {accessibleTeamIds && accessibleTeamIds.length === 0
+      <div style={{ marginTop: 24 }}>
+        <SearchableList
+          items={items}
+          placeholder="Search players by name, team, or position..."
+          emptyMessage={
+            accessibleTeamIds && accessibleTeamIds.length === 0
               ? "You aren't assigned to any teams yet."
-              : 'No players yet — click "Add Player" to create the first one.'}
-          </p>
-        )}
+              : 'No players yet — click "Add Player" to create the first one.'
+          }
+        />
       </div>
     </div>
   );

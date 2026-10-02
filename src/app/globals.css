@@ -132,12 +132,13 @@ a {
   padding: 24px;
   position: sticky;
   top: 0;
-  height: 100vh;
-  overflow-y: auto;
+  min-height: 100vh;
   flex-shrink: 0;
+  transition: width 0.2s ease, padding 0.2s ease;
 }
 
-.nav-toggle-checkbox {
+.nav-toggle-checkbox,
+.sidebar-collapse-checkbox {
   display: none;
 }
 
@@ -149,37 +150,42 @@ a {
   display: none;
 }
 
-.nav-group-checkbox {
-  display: none;
-}
-
-.nav-group-header {
+.sidebar-toggle-label {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 20px;
   cursor: pointer;
-  padding: 4px 0;
-  user-select: none;
+  color: var(--chalk);
+  opacity: 0.65;
+  border-radius: 6px;
+}
+.sidebar-toggle-label:hover {
+  opacity: 1;
+  background: rgba(245, 243, 238, 0.08);
 }
 
-.nav-group-chevron {
-  margin-left: auto;
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
+/* Collapsed state: shrink to an icon-only rail */
+.sidebar-collapse-checkbox:checked ~ .admin-sidebar {
+  width: 68px;
+  padding-left: 14px;
+  padding-right: 14px;
 }
-
-.nav-group-checkbox:checked + .nav-group-header .nav-group-chevron {
-  transform: rotate(-90deg);
+.sidebar-collapse-checkbox:checked ~ .admin-sidebar .sidebar-brand-text,
+.sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-group-content,
+.sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-group-header span,
+.sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-group-chevron,
+.sidebar-collapse-checkbox:checked ~ .admin-sidebar .sidebar-footer-link-text {
+  display: none;
 }
-
-.nav-group-content {
-  overflow: hidden;
-  max-height: 300px;
-  transition: max-height 0.25s ease;
+.sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-group-header {
+  justify-content: center;
 }
-
-.nav-group-checkbox:checked + .nav-group-header + .nav-group-content {
-  max-height: 0;
+.sidebar-collapse-checkbox:checked ~ .admin-sidebar nav > div {
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {
@@ -187,6 +193,8 @@ a {
     position: fixed;
     top: 0;
     left: 0;
+    height: 100vh;
+    overflow-y: auto;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     z-index: 50;
@@ -207,6 +215,9 @@ a {
     line-height: 1;
   }
 
+  .nav-overlay {
+    display: none;
+  }
   .nav-toggle-checkbox:checked ~ .nav-overlay {
     display: block;
     position: fixed;
@@ -221,6 +232,16 @@ a {
 
   .admin-main {
     padding: 20px !important;
+  }
+
+  /* the collapse rail is a desktop-only feature — mobile keeps the drawer */
+  .sidebar-toggle-label {
+    display: none;
+  }
+  .sidebar-collapse-checkbox:checked ~ .admin-sidebar {
+    width: 220px;
+    padding-left: 24px;
+    padding-right: 24px;
   }
 }
 

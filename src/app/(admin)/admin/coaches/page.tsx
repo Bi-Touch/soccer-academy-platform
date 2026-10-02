@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deleteCoach } from "./actions";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
+import { SearchableList } from "@/components/SearchableList";
 
 const rowStyle: React.CSSProperties = {
   background: "white",
@@ -16,6 +17,28 @@ const rowStyle: React.CSSProperties = {
 export default async function AdminCoachesPage() {
   const coaches = await prisma.coach.findMany({ include: { user: true, teams: true } });
 
+  const items = coaches.map((coach) => ({
+    id: coach.id,
+    label: `${coach.user.name} ${coach.title ?? ""} ${coach.teams.map((t) => t.name).join(" ")}`,
+    node: (
+      <div style={rowStyle}>
+        <PlayerAvatar src={coach.photoUrl} alt={coach.user.name} size={48} rounded />
+        <div style={{ flex: 1 }}>
+          <strong>{coach.user.name}</strong>
+          <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>
+            {coach.title ?? "Coach"} · {coach.teams.map((t) => t.name).join(", ") || "No teams assigned"}
+          </div>
+        </div>
+        <Link href={`/admin/coaches/${coach.id}/edit`} style={{ marginRight: 16, fontSize: "0.9rem" }}>Edit</Link>
+        <form action={deleteCoach.bind(null, coach.id)}>
+          <button type="submit" style={{ background: "none", border: "none", color: "var(--card-red)", cursor: "pointer", fontSize: "0.9rem", padding: 0 }}>
+            Remove
+          </button>
+        </form>
+      </div>
+    ),
+  }));
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -23,28 +46,12 @@ export default async function AdminCoachesPage() {
         <Link href="/admin/coaches/new" className="button">+ Add Coach</Link>
       </div>
 
-      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-        {coaches.map((coach) => (
-          <div key={coach.id} style={rowStyle}>
-            <PlayerAvatar src={coach.photoUrl} alt={coach.user.name} size={48} rounded />
-            <div style={{ flex: 1 }}>
-              <strong>{coach.user.name}</strong>
-              <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>
-                {coach.title ?? "Coach"} · {coach.teams.map((t) => t.name).join(", ") || "No teams assigned"}
-              </div>
-            </div>
-            <Link href={`/admin/coaches/${coach.id}/edit`} style={{ marginRight: 16, fontSize: "0.9rem" }}>Edit</Link>
-            <form action={deleteCoach.bind(null, coach.id)}>
-              <button
-                type="submit"
-                style={{ background: "none", border: "none", color: "var(--card-red)", cursor: "pointer", fontSize: "0.9rem", padding: 0 }}
-              >
-                Remove
-              </button>
-            </form>
-          </div>
-        ))}
-        {coaches.length === 0 && <p style={{ opacity: 0.7 }}>No coaches yet — click "Add Coach" to create the first one.</p>}
+      <div style={{ marginTop: 24 }}>
+        <SearchableList
+          items={items}
+          placeholder="Search coaches by name, title, or team..."
+          emptyMessage='No coaches yet — click "Add Coach" to create the first one.'
+        />
       </div>
     </div>
   );

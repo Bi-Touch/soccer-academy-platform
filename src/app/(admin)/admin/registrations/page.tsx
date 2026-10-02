@@ -1,35 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
+import { StatusPill } from "@/components/StatusPill";
+import { SearchableTable } from "@/components/SearchableTable";
 
-const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
-  PENDING: { bg: "#fdf3e2", fg: "var(--floodlight)" },
-  UNDER_REVIEW: { bg: "#fdf3e2", fg: "var(--floodlight)" },
-  CHANGES_REQUESTED: { bg: "#fdecec", fg: "var(--card-red)" },
-  APPROVED: { bg: "#e7f3ed", fg: "var(--pitch)" },
-  REJECTED: { bg: "#fdecec", fg: "var(--card-red)" },
-};
-
-function StatusPill({ status }: { status: string }) {
-  const style = STATUS_PILL[status] ?? { bg: "#eee", fg: "#555" };
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        background: style.bg,
-        color: style.fg,
-        fontWeight: 600,
-        fontSize: "0.8rem",
-        padding: "4px 12px",
-        borderRadius: 999,
-      }}
-    >
-      {status.replace("_", " ")}
-    </span>
-  );
-}
-
-export default async function AdminRegistrationsPage() {
+export default async function AdminRegistrationsPage({
+  searchParams,
+}: {
+  searchParams: { resetGuardianEmail?: string; tempPassword?: string };
+}) {
   await requireAdmin();
 
   const registrations = await prisma.playerRegistration.findMany({
@@ -37,38 +16,41 @@ export default async function AdminRegistrationsPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  const rows = registrations.map((r) => ({
+    id: r.id,
+    label: `${r.firstName} ${r.lastName} ${r.parentGuardian.firstName} ${r.parentGuardian.lastName} ${r.status}`,
+    node: (
+      <>
+        <td style={{ padding: "10px 16px" }}>{r.firstName} {r.lastName}</td>
+        <td style={{ padding: "10px 16px" }}>{r.parentGuardian.firstName} {r.parentGuardian.lastName}</td>
+        <td style={{ padding: "10px 16px" }}>{r.createdAt.toLocaleDateString()}</td>
+        <td style={{ padding: "10px 16px" }}><StatusPill status={r.status} /></td>
+        <td style={{ padding: "10px 16px", textAlign: "right" }}>
+          <Link href={`/admin/registrations/${r.id}`} style={{ fontSize: "0.9rem" }}>View</Link>
+        </td>
+      </>
+    ),
+  }));
+
   return (
     <div>
       <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>PLAYER REGISTRATIONS</h1>
 
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", marginTop: 24, borderCollapse: "collapse", minWidth: 700 }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid var(--ink)" }}>
-              <th style={{ padding: "8px 0" }}>Player</th>
-              <th>Guardian</th>
-              <th>Submitted</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {registrations.map((r) => (
-              <tr key={r.id} style={{ borderBottom: "1px solid #e3ded2" }}>
-                <td style={{ padding: "10px 0" }}>{r.firstName} {r.lastName}</td>
-                <td>{r.parentGuardian.firstName} {r.parentGuardian.lastName}</td>
-                <td>{r.createdAt.toLocaleDateString()}</td>
-                <td><StatusPill status={r.status} /></td>
-                <td style={{ textAlign: "right" }}>
-                  <Link href={`/admin/registrations/${r.id}`} style={{ fontSize: "0.9rem" }}>View</Link>
-                </td>
-              </tr>
-            ))}
-            {registrations.length === 0 && (
-              <tr><td colSpan={5} style={{ padding: "24px 0", opacity: 0.7 }}>No registrations yet.</td></tr>
-            )}
-          </tbody>
-        </table>
+      {searchParams.tempPassword && searchParams.resetGuardianEmail && (
+        <div style={{ background: "#fdf3e2", border: "1px solid var(--floodlight)", borderRadius: 8, padding: 20, margin: "16px 0" }}>
+          <p style={{ fontWeight: 600, color: "var(--pitch)" }}>Password reset</p>
+          <p style={{ fontSize: "0.9rem" }}><strong>Email:</strong> {searchParams.resetGuardianEmail}</p>
+          <p style={{ fontSize: "0.9rem" }}><strong>Password:</strong> {searchParams.tempPassword}</p>
+        </div>
+      )}
+
+      <div style={{ marginTop: 24 }}>
+        <SearchableTable
+          columns={["Player", "Guardian", "Submitted", "Status", ""]}
+          rows={rows}
+          placeholder="Search registrations by player, guardian, or status..."
+          emptyMessage="No registrations yet."
+        />
       </div>
     </div>
   );
