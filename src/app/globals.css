@@ -245,6 +245,10 @@ a {
   }
 }
 
+.nav-group-checkbox {
+  display: none;
+}
+
 html, body {
   overflow-x: hidden;
 }
