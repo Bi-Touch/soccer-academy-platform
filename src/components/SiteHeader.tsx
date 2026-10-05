@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import Image from "next/image";
 
 const SQUAD_LINKS = [
   { href: "/teams", label: "Teams" },
@@ -18,7 +19,7 @@ export function SiteHeader() {
     <header style={{ background: "var(--pitch)", color: "var(--chalk)", position: "sticky", top: 0, zIndex: 30 }}>
       <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px" }}>
         <Link href="/" className="display" style={{ fontSize: "1.6rem", color: "var(--chalk)", textDecoration: "none" }}>
-          ACADEMY
+          <Image src="/images/logo.png" alt="Academy Logo" width={200} height={60} priority style={{width: "auto", height: "45px", objectFit: "contain",}} />
         </Link>
 
         <nav className="nav-desktop" style={{ display: "flex", gap: 28, fontSize: "0.95rem", alignItems: "center" }}>
