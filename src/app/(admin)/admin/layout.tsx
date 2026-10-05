@@ -93,7 +93,7 @@ function NavGroup({
         <Link href={firstHref} aria-label={`Go to ${label}`} style={{ display: "flex", color: "inherit" }}>
           <Icon path={icon} />
         </Link>
-        <label htmlFor={id} className="nav-group-label-wrap" style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, cursor: "pointer" }}>
+        <label htmlFor={id} className="nav-group-label-wrap">
           <span style={groupLabelStyle}>{label}</span>
           <ChevronIcon />
         </label>
