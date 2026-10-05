@@ -73,15 +73,31 @@ const ICONS = {
   shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
 };
 
-function NavGroup({ id, label, icon, children }: { id: string; label: string; icon: React.ReactNode; children: React.ReactNode }) {
+function NavGroup({
+  id,
+  label,
+  icon,
+  firstHref,
+  children,
+}: {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  firstHref: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <input type="checkbox" id={id} className="nav-group-checkbox" />
-      <label htmlFor={id} className="nav-group-header">
-        <Icon path={icon} />
-        <span style={groupLabelStyle}>{label}</span>
-        <ChevronIcon />
-      </label>
+      <div className="nav-group-header">
+        <Link href={firstHref} aria-label={`Go to ${label}`} style={{ display: "flex", color: "inherit" }}>
+          <Icon path={icon} />
+        </Link>
+        <label htmlFor={id} className="nav-group-label-wrap" style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, cursor: "pointer" }}>
+          <span style={groupLabelStyle}>{label}</span>
+          <ChevronIcon />
+        </label>
+      </div>
       <div className="nav-group-content">
         <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 12, paddingLeft: 24 }}>
           {children}
@@ -112,13 +128,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="display sidebar-brand-text" style={{ fontSize: "1.4rem", marginBottom: 32 }}>STAFF</div>
 
           <nav style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-            <NavGroup id="group-roster" label="Roster" icon={ICONS.users}>
+            <NavGroup id="group-roster" label="Roster" icon={ICONS.users} firstHref={isAdmin ? "/admin/teams" : "/admin/players"}>
               {isAdmin && <Link href="/admin/teams" style={navLinkStyle}>Teams</Link>}
               {isAdmin && <Link href="/admin/coaches" style={navLinkStyle}>Coaches</Link>}
               <Link href="/admin/players" style={navLinkStyle}>Players</Link>
             </NavGroup>
 
-            <NavGroup id="group-operations" label="Operations" icon={ICONS.calendar}>
+            <NavGroup id="group-operations" label="Operations" icon={ICONS.calendar} firstHref="/admin/schedule">
               <Link href="/admin/schedule" style={navLinkStyle}>Schedule</Link>
               <Link href="/admin/training" style={navLinkStyle}>Training Log</Link>
               <Link href="/admin/assessments" style={navLinkStyle}>Assessments</Link>
@@ -126,25 +142,28 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/matches" style={navLinkStyle}>Match Stats</Link>
             </NavGroup>
 
-            <NavGroup id="group-reports" label="Reports" icon={ICONS.barChart}>
+            <NavGroup id="group-reports" label="Reports" icon={ICONS.barChart} firstHref="/admin/training/reports">
               <Link href="/admin/training/reports" style={navLinkStyle}>Training Reports</Link>
               <Link href="/admin/reports" style={navLinkStyle}>Team Reports</Link>
             </NavGroup>
 
-            <NavGroup id="group-content" label="Content" icon={ICONS.image}>
+            <NavGroup id="group-content" label="Content" icon={ICONS.image} firstHref={isAdmin ? "/admin/news" : "/admin/videos"}>
               {isAdmin && <Link href="/admin/news" style={navLinkStyle}>News</Link>}
               <Link href="/admin/videos" style={navLinkStyle}>Videos</Link>
               {isAdmin && <Link href="/admin/gallery" style={navLinkStyle}>Gallery</Link>}
             </NavGroup>
 
             {isAdmin && (
-              <NavGroup id="group-admin" label="Admin" icon={ICONS.shield}>
+              <NavGroup id="group-admin" label="Admin" icon={ICONS.shield} firstHref="/admin/registrations">
                 <Link href="/admin/registrations" style={navLinkStyle}>Registrations</Link>
                 <Link href="/admin/enquiries" style={navLinkStyle}>Enquiries</Link>
               </NavGroup>
             )}
 
             <div style={{ paddingTop: 8, borderTop: "1px solid rgba(245, 243, 238, 0.14)" }}>
+              <Link href="/admin/guide" className="sidebar-footer-link" style={{ ...navLinkStyle, opacity: 0.8, display: "block", marginBottom: 12 }}>
+                <span className="sidebar-footer-link-text">📖 Data Collection Guide</span>
+              </Link>
               <Link href="/portal/dashboard" className="sidebar-footer-link" style={{ ...navLinkStyle, opacity: 0.8 }}>
                 <span className="sidebar-footer-link-text">&larr; Player Portal</span>
               </Link>

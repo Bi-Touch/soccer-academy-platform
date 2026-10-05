@@ -5,7 +5,7 @@ import { useState } from "react";
 export type SearchableRow = {
   id: string;
   label: string;
-  node: React.ReactNode; // a <tr>...</tr> element
+  node: React.ReactNode; // the <td>...</td> cells for one row
 };
 
 export function SearchableTable({
@@ -52,7 +52,7 @@ export function SearchableTable({
             {filtered.length === 0 ? (
               <tr><td colSpan={columns.length} style={{ padding: "24px 16px", opacity: 0.7 }}>{emptyMessage}</td></tr>
             ) : (
-              filtered.map((r) => <tr key={r.id} style={{ display: "contents" }}>{r.node}</tr>)
+              filtered.map((r) => <tr key={r.id}>{r.node}</tr>)
             )}
           </tbody>
         </table>

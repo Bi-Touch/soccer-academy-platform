@@ -125,6 +125,10 @@ a {
   grid-template-columns: repeat(5, 1fr);
 }
 
+/* ───────────────────────────────────────────────
+   Admin / portal sidebar
+   ─────────────────────────────────────────────── */
+
 .admin-sidebar {
   width: 220px;
   background: var(--ink);
@@ -138,7 +142,8 @@ a {
 }
 
 .nav-toggle-checkbox,
-.sidebar-collapse-checkbox {
+.sidebar-collapse-checkbox,
+.nav-group-checkbox {
   display: none;
 }
 
@@ -167,7 +172,41 @@ a {
   background: rgba(245, 243, 238, 0.08);
 }
 
-/* Collapsed state: shrink to an icon-only rail */
+/* Collapsible nav groups (Roster, Operations, Reports, etc.) */
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.nav-group-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.nav-group-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.nav-group-checkbox:checked + .nav-group-header .nav-group-chevron {
+  transform: rotate(-90deg);
+}
+
+.nav-group-content {
+  overflow: hidden;
+  max-height: 300px;
+  transition: max-height 0.25s ease;
+}
+.nav-group-checkbox:checked + .nav-group-header + .nav-group-content {
+  max-height: 0;
+}
+
+/* Collapsed rail mode (desktop width-toggle) */
 .sidebar-collapse-checkbox:checked ~ .admin-sidebar {
   width: 68px;
   padding-left: 14px;
@@ -175,8 +214,7 @@ a {
 }
 .sidebar-collapse-checkbox:checked ~ .admin-sidebar .sidebar-brand-text,
 .sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-group-content,
-.sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-group-header span,
-.sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-group-chevron,
+.sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-group-label-wrap,
 .sidebar-collapse-checkbox:checked ~ .admin-sidebar .sidebar-footer-link-text {
   display: none;
 }
@@ -215,9 +253,6 @@ a {
     line-height: 1;
   }
 
-  .nav-overlay {
-    display: none;
-  }
   .nav-toggle-checkbox:checked ~ .nav-overlay {
     display: block;
     position: fixed;
@@ -245,9 +280,9 @@ a {
   }
 }
 
-.nav-group-checkbox {
-  display: none;
-}
+/* ───────────────────────────────────────────────
+   Layout helpers
+   ─────────────────────────────────────────────── */
 
 html, body {
   overflow-x: hidden;

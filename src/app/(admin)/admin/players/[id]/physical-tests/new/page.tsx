@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { SubmitButton } from "@/components/SubmitButton";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { createPhysicalTest } from "../actions";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
+import { TEST_PROTOCOLS } from "@/lib/dataCollectionGuide";
 import { playerName } from "@/lib/playerDisplay";
+import { ProtocolHelp } from "@/components/ProtocolHelp";
 
 export default async function NewPhysicalTestPage({ params }: { params: { id: string } }) {
   const user = await getSessionUser();
@@ -24,9 +25,7 @@ export default async function NewPhysicalTestPage({ params }: { params: { id: st
 
   return (
     <div>
-      <Link href="/admin/physical-tests" style={{ fontSize: "0.9rem", opacity: 0.7 }}>
-        &larr; All physical tests
-      </Link>
+      <Link href="/admin/physical-tests" style={{ fontSize: "0.9rem", opacity: 0.7 }}>&larr; Physical Tests</Link>
 
       <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12, marginBottom: 24 }}>
         NEW PHYSICAL TEST
@@ -40,30 +39,36 @@ export default async function NewPhysicalTestPage({ params }: { params: { id: st
         </div>
       )}
 
-      <form action={createWithId} style={{ maxWidth: 480, paddingBottom: 88 }}>
+      <form action={createWithId} style={{ maxWidth: 520, paddingBottom: 88 }}>
         <label style={{ fontSize: "0.85rem" }}>
           Test date
           <input name="testedAt" type="date" defaultValue={today} style={inputStyle} />
         </label>
 
         <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-          {PHYSICAL_TEST_METRICS.map((m) => (
-            <label key={m.key} style={{ fontSize: "0.85rem" }}>
-              {m.label} <span style={{ opacity: 0.5 }}>({m.unit})</span>
-              <input
-                name={`value_${m.key}`}
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Leave blank if not tested"
-                style={inputStyle}
-              />
-            </label>
-          ))}
+          {PHYSICAL_TEST_METRICS.map((m) => {
+            const protocol = TEST_PROTOCOLS.find((p) => p.code === m.testCode);
+            return (
+              <div key={m.key}>
+                <label style={{ fontSize: "0.85rem" }}>
+                  {m.label} <span style={{ opacity: 0.5 }}>({m.unit})</span>
+                  <input
+                    name={`value_${m.key}`}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Leave blank if not tested"
+                    style={inputStyle}
+                  />
+                </label>
+                {protocol && <ProtocolHelp protocol={protocol} />}
+              </div>
+            );
+          })}
         </div>
 
         <div style={{ position: "sticky", bottom: 0, background: "var(--chalk)", paddingTop: 16, marginTop: 24, borderTop: "1px solid #e3ded2" }}>
-          <SubmitButton>Save test results</SubmitButton>
+          <button type="submit" className="button">Save test results</button>
         </div>
       </form>
     </div>
