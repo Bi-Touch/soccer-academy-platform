@@ -117,3 +117,14 @@ export async function sendPlayerAddedEmail(guardianEmail: string, guardianName: 
      <p><a href="${process.env.NEXTAUTH_URL || ""}/login">Log in</a> to view their profile.</p>`
   );
 }
+
+export async function sendPasswordResetEmail(to: string, name: string, resetUrl: string) {
+  await sendEmail(
+    to,
+    "Reset your password",
+    `<p>Hi ${name},</p>
+     <p>We received a request to reset your password. This link expires in 1 hour.</p>
+     <p><a href="${resetUrl}">Reset your password</a></p>
+     <p>If you didn't request this, you can safely ignore this email.</p>`
+  );
+}

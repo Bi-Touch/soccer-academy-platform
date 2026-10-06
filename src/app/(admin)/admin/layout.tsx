@@ -116,6 +116,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <MobileNavReset>
         <input type="checkbox" id="nav-toggle" className="nav-toggle-checkbox" />
+      </MobileNavReset>  
+      
         <label htmlFor="nav-toggle" className="nav-overlay" aria-hidden="true" />
 
         <input type="checkbox" id="sidebar-collapse" className="sidebar-collapse-checkbox" />
@@ -170,7 +172,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </div>
           </nav>
         </aside>
-      </MobileNavReset>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <header
