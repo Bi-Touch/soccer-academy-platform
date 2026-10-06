@@ -302,6 +302,81 @@ html, body {
   margin-top: 40px;
 }
 
+.guide-section {
+  background: white;
+  border: 1px solid #e3ded2;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.guide-section-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 18px 20px;
+  font-weight: 700;
+  font-family: 'Big Shoulders Display', sans-serif;
+  font-size: 1.25rem;
+  color: var(--pitch);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.guide-section-summary::-webkit-details-marker {
+  display: none;
+}
+.guide-section-summary::after {
+  content: "+";
+  font-size: 1.1rem;
+  opacity: 0.5;
+  font-family: 'Source Sans 3', sans-serif;
+}
+.guide-section[open] > .guide-section-summary::after {
+  content: "\2212";
+}
+
+.guide-section-body {
+  padding: 0 20px 20px;
+}
+
+.protocol-card {
+  background: #faf8f3;
+  border: 1px solid #e3ded2;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.protocol-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: var(--pitch);
+}
+.protocol-summary::-webkit-details-marker {
+  display: none;
+}
+.protocol-summary::after {
+  content: "+ Show protocol";
+  font-size: 0.8rem;
+  font-weight: 400;
+  opacity: 0.5;
+  white-space: nowrap;
+  margin-left: 12px;
+}
+.protocol-card[open] > .protocol-summary::after {
+  content: "\2212 Hide";
+}
+
+.protocol-body {
+  padding: 0 16px 16px;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 900px) {
   .chart-grid-3 {
     grid-template-columns: 1fr;
