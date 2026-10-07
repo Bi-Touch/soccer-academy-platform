@@ -55,14 +55,56 @@ async function sendPush(recipient: Recipient, title: string, body: string, url: 
 
 export async function sendEmail(to: string, subject: string, html: string) {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return console.error("RESEND_API_KEY not set — skipped email to", to);
+  const from = process.env.EMAIL_FROM;
+
+  if (!apiKey) {
+    console.error("EMAIL ERROR: RESEND_API_KEY is not configured");
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+
+  if (!from) {
+    console.error("EMAIL ERROR: EMAIL_FROM is not configured");
+    throw new Error("EMAIL_FROM is not configured");
+  }
+
+  console.log("Sending email:", {
+    to,
+    from,
+    subject,
+    apiKeyConfigured: true,
+  });
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.EMAIL_FROM, to, subject, html }),
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject,
+      html,
+    }),
   });
-  if (!res.ok) console.error("Email send failed:", res.status, await res.text());
+
+  const responseText = await res.text();
+
+  if (!res.ok) {
+    console.error(
+      "RESEND EMAIL FAILED:",
+      res.status,
+      responseText
+    );
+
+    throw new Error(
+      `Resend email failed (${res.status}): ${responseText}`
+    );
+  }
+
+  console.log("RESEND EMAIL SUCCESS:", responseText);
+
+  return JSON.parse(responseText);
 }
 
 async function notify(recipient: Recipient, title: string, body: string, url: string) {
