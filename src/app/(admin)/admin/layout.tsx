@@ -134,6 +134,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               {isAdmin && <Link href="/admin/teams" style={navLinkStyle}>Teams</Link>}
               {isAdmin && <Link href="/admin/coaches" style={navLinkStyle}>Coaches</Link>}
               <Link href="/admin/players" style={navLinkStyle}>Players</Link>
+              <Link href="/admin/players/compare" style={navLinkStyle}>Compare Players</Link>
             </NavGroup>
 
             <NavGroup id="group-operations" label="Operations" icon={ICONS.calendar} firstHref="/admin/schedule">
@@ -142,6 +143,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/assessments" style={navLinkStyle}>Assessments</Link>
               <Link href="/admin/physical-tests" style={navLinkStyle}>Physical Tests</Link>
               <Link href="/admin/matches" style={navLinkStyle}>Match Stats</Link>
+              <Link href="/admin/injuries" style={navLinkStyle}>Injuries</Link>
             </NavGroup>
 
             <NavGroup id="group-reports" label="Reports" icon={ICONS.barChart} firstHref="/admin/training/reports">

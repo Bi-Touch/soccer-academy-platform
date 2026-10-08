@@ -31,7 +31,10 @@ export default async function AdminPhysicalTestsPage() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>PHYSICAL TESTS</h1>
-        <Link href="/admin/physical-tests/import" className="button outline">Import CSV</Link>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <Link href="/admin/physical-tests/import" className="button outline">Import CSV</Link>
+          
+        </div>  
       </div>
       <p style={{ opacity: 0.7, marginTop: 4, fontSize: "0.9rem" }}>
         Log a physical test for a player. Scores and trend charts live under each player's Reports.

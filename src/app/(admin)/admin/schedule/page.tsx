@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deleteEvent } from "./actions";
+import { ExportCsvButton } from "@/components/ExportCsvButton";
+import { exportSchedule } from "./actions";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 
 export default async function AdminSchedulePage() {
@@ -19,6 +21,7 @@ export default async function AdminSchedulePage() {
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>SCHEDULE</h1>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Link href="/admin/schedule/import" className="button outline">Import CSV</Link>
+          <ExportCsvButton action={exportSchedule} filename="schedule-export.csv" />
           <Link href="/admin/schedule/new" className="button">+ Add Event</Link>
         </div>
       </div>

@@ -422,3 +422,16 @@ html, body {
     transition: none !important;
   }
 }
+
+.journey-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .journey-desktop {
+    display: none !important;
+  }
+  .journey-mobile {
+    display: block !important;
+  }
+}

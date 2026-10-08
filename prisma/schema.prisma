@@ -60,18 +60,18 @@ enum AssessmentDomain {
 // ─────────────────────────────────────────────────────────────
 
 model User {
-  id                 String   @id @default(cuid())
-  email              String   @unique
-  passwordHash       String
-  name               String
-  role               Role     @default(PLAYER)
-  createdAt          DateTime @default(now())
-  player             Player?
-  coach              Coach?
-  parentGuardian     ParentGuardian? // NEW: set when role = PARENT
-  emailNotifications Boolean  @default(true)
-  pushNotifications  Boolean  @default(false)
-  pushSubscriptions  PushSubscription[]
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String
+  name                String
+  role                Role                 @default(PLAYER)
+  createdAt           DateTime             @default(now())
+  player              Player?
+  coach               Coach?
+  parentGuardian      ParentGuardian? // NEW: set when role = PARENT
+  emailNotifications  Boolean              @default(true)
+  pushNotifications   Boolean              @default(false)
+  pushSubscriptions   PushSubscription[]
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -86,31 +86,31 @@ model PushSubscription {
 }
 
 model Player {
-  id             String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // NEW: name lives on Player itself so a player without a login
   // (registered by a parent/guardian) still has a permanent name.
   // Nullable until backfilled from user.name for existing rows.
-  name           String?
+  name String?
 
   // CHANGED: optional — parent-registered players have no login of their own.
-  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String?  @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String? @unique
 
   // NEW: ongoing parent/guardian relationship (the registration record
   // is only the onboarding/audit trail, not the access-control link).
   parentGuardian   ParentGuardian? @relation(fields: [parentGuardianId], references: [id])
   parentGuardianId String?
 
-  dateOfBirth    DateTime?
-  sex            Sex? // NEW: required for benchmark scoring (nullable until backfilled)
-  position       String?
-  shirtNumber    Int?
-  photoUrl       String?
-  bio            String?
+  dateOfBirth DateTime?
+  sex         Sex? // NEW: required for benchmark scoring (nullable until backfilled)
+  position    String?
+  shirtNumber Int?
+  photoUrl    String?
+  bio         String?
 
-  team           Team?    @relation(fields: [teamId], references: [id])
-  teamId         String?
+  team   Team?   @relation(fields: [teamId], references: [id])
+  teamId String?
 
   stats              PlayerStat[]
   progressNotes      ProgressNote[]
@@ -118,6 +118,7 @@ model Player {
   assessments        DevelopmentAssessment[]
   physicalTests      PhysicalTest[]
   matchPerformances  MatchPerformance[]
+  injuryRecords      InjuryRecord[]
 }
 
 model Coach {
@@ -128,7 +129,7 @@ model Coach {
   bio      String?
   photoUrl String?
 
-  teams    Team[]
+  teams Team[]
 }
 
 model Team {
@@ -148,11 +149,11 @@ model Team {
 // ─────────────────────────────────────────────────────────────
 
 model ParentGuardian {
-  id           String  @id @default(cuid())
+  id String @id @default(cuid())
 
   // Set once a registration is approved and a PARENT login is created.
-  user         User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String? @unique
 
   firstName    String
   lastName     String
@@ -170,36 +171,36 @@ model ParentGuardian {
 }
 
 model PlayerRegistration {
-  id               String         @id @default(cuid())
+  id String @id @default(cuid())
 
   parentGuardianId String
   parentGuardian   ParentGuardian @relation(fields: [parentGuardianId], references: [id], onDelete: Cascade)
 
   // Player information
-  firstName        String
-  lastName         String
-  dateOfBirth      DateTime
-  gender           String?
-  nationality      String?
-  position         String?
-  preferredFoot    String?
-  previousClub     String?
-  previousAcademy  String?
+  firstName       String
+  lastName        String
+  dateOfBirth     DateTime
+  gender          String?
+  nationality     String?
+  position        String?
+  preferredFoot   String?
+  previousClub    String?
+  previousAcademy String?
 
   // Emergency / medical
-  emergencyName    String?
-  emergencyPhone   String?
-  medicalNotes     String?
+  emergencyName  String?
+  emergencyPhone String?
+  medicalNotes   String?
 
-  status           RegistrationStatus @default(PENDING)
+  status RegistrationStatus @default(PENDING)
 
-  reviewedAt       DateTime?
-  reviewedById     String?
-  reviewNotes      String?
+  reviewedAt   DateTime?
+  reviewedById String?
+  reviewNotes  String?
 
-  consent          ConsentRecord?
+  consent ConsentRecord?
 
-  createdPlayerId  String? @unique
+  createdPlayerId String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -209,7 +210,7 @@ model PlayerRegistration {
 }
 
 model ConsentRecord {
-  id             String             @id @default(cuid())
+  id String @id @default(cuid())
 
   registrationId String             @unique
   registration   PlayerRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
@@ -463,13 +464,39 @@ model MatchPerformance {
 // ─────────────────────────────────────────────────────────────
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
+  id        String    @id @default(cuid())
+  token     String    @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+//Injury Tracking
+// ─────────────────────────────────────────────────────────────
+
+enum InjuryStatus {
+  ACTIVE
+  RECOVERED
+}
+
+model InjuryRecord {
+  id                 String       @id @default(cuid())
+  player             Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId           String
+  injuryType         String
+  description        String?
+  dateOccurred       DateTime
+  expectedReturnDate DateTime?
+  actualReturnDate   DateTime?
+  status             InjuryStatus @default(ACTIVE)
+  recordedBy         String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([playerId, status])
 }

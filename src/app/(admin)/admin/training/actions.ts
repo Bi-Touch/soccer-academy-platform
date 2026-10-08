@@ -3,7 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { toCsv } from "@/lib/csv";
 import { requireStaff, getAccessibleTeamIds, assertTeamAccess } from "@/lib/permissions";
+import { playerName } from "@/lib/playerDisplay";
 
 const VALID_STATUSES = ["PRESENT", "LATE", "ABSENT_EXCUSED", "ABSENT_UNEXCUSED", "INJURED"] as const;
 type Status = (typeof VALID_STATUSES)[number];
@@ -46,3 +48,22 @@ export async function saveAttendance(eventId: string, formData: FormData) {
   revalidatePath(`/admin/training/${eventId}`);
   redirect("/admin/training");
 }
+
+export async function exportTrainingLog(): Promise<string> {
+  const user = await requireStaff();
+  const accessibleTeamIds = await getAccessibleTeamIds(user);
+  const records = await prisma.trainingAttendance.findMany({
+    where: accessibleTeamIds ? { player: { teamId: { in: accessibleTeamIds } } } : undefined,
+    include: { player: { include: { user: true, team: true } }, event: true },
+    orderBy: { event: { startsAt: "desc" } },
+  });
+  const headers = ["team", "session", "date", "player", "playerEmail", "status", "rating", "note"];
+  const rows = records.map((r) => [
+    r.player.team?.name ?? "", r.event.title,
+    r.event.startsAt.toISOString().slice(0, 10),
+    playerName(r.player), r.player.user?.email ?? "",
+    r.status, r.rating?.toString() ?? "", r.note ?? "",
+  ]);
+  return toCsv(headers, rows);
+}
+

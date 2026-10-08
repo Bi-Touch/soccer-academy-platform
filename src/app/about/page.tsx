@@ -194,7 +194,42 @@ export default async function AboutPage() {
             FROM INDIVIDUAL SESSIONS TO A FULL ACADEMY
           </h2>
 
-          <div style={{ overflowX: "auto" }}>
+          {/* Mobile: simple stacked list, no horizontal scroll or zigzag */}
+          <div className="journey-mobile">
+            {JOURNEY.map((j, i) => {
+              const color = JOURNEY_COLORS[i % JOURNEY_COLORS.length];
+              return (
+                <div
+                  key={`${j.year}-${j.title}-m`}
+                  style={{
+                    position: "relative",
+                    paddingLeft: 28,
+                    borderLeft: "2px solid #e3ded2",
+                    paddingBottom: i === JOURNEY.length - 1 ? 0 : 32,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: -8,
+                      top: 4,
+                      width: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      background: color,
+                      border: "3px solid white",
+                    }}
+                  />
+                  <div className="display" style={{ fontSize: "1.2rem", color }}>{j.year}</div>
+                  <h3 style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--pitch)", marginTop: 4 }}>{j.title}</h3>
+                  <p style={{ fontSize: "0.85rem", opacity: 0.75, marginTop: 4 }}>{j.body}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: horizontal zigzag timeline */}
+          <div className="journey-desktop" style={{ overflowX: "auto" }}>
             <div
               style={{
                 display: "grid",

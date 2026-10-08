@@ -3,8 +3,10 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { toCsv } from "@/lib/csv";
 import { requireStaff, getAccessibleTeamIds, assertTeamAccess } from "@/lib/permissions";
-import { MATCH_STAT_KEYS } from "@/lib/matchStats";
+import { MATCH_STAT_GROUPS, MATCH_STAT_KEYS } from "@/lib/matchStats";
+import { playerName } from "@/lib/playerDisplay";
 
 export async function saveMatchPerformance(eventId: string, formData: FormData) {
   const user = await requireStaff();
@@ -38,3 +40,21 @@ export async function saveMatchPerformance(eventId: string, formData: FormData) 
   revalidatePath(`/admin/matches/${eventId}`);
   redirect("/admin/matches");
 }
+
+export async function exportMatchStats(): Promise<string> {
+  const user = await requireStaff();
+  const accessibleTeamIds = await getAccessibleTeamIds(user);
+  const performances = await prisma.matchPerformance.findMany({
+    where: accessibleTeamIds ? { player: { teamId: { in: accessibleTeamIds } } } : undefined,
+    include: { player: { include: { user: true, team: true } }, event: true },
+    orderBy: { event: { startsAt: "desc" } },
+  });
+  const headers = ["team", "match", "date", "player", "playerEmail", ...MATCH_STAT_GROUPS.flatMap((g) => g.fields.map((f) => f.key))];
+  const rows = performances.map((p) => [
+    p.player.team?.name ?? "", p.event.title, p.event.startsAt.toISOString().slice(0, 10),
+    playerName(p.player), p.player.user?.email ?? "",
+    ...MATCH_STAT_GROUPS.flatMap((g) => g.fields.map((f) => (p as unknown as Record<string, number>)[f.key].toString())),
+  ]);
+  return toCsv(headers, rows);
+}
+

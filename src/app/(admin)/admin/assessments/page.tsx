@@ -32,6 +32,7 @@ export default async function AdminAssessmentsPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>ASSESSMENTS</h1>
         <Link href="/admin/assessments/import" className="button outline">Import CSV</Link>
+
       </div>  
       <p style={{ opacity: 0.7, marginTop: 4, fontSize: "0.9rem" }}>
         Log a development assessment for a player. History and charts live under each player's Reports.

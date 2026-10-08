@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { ExportCsvButton } from "@/components/ExportCsvButton";
+import { exportSchedule } from "../schedule/actions";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { SearchableTable } from "@/components/SearchableTable";
 
@@ -52,7 +54,10 @@ export default async function TrainingListPage() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>TRAINING LOG</h1>
-        <Link href="/admin/training/import" className="button outline">Import CSV</Link>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <Link href="/admin/training/import" className="button outline">Import CSV</Link>
+          <ExportCsvButton action={exportSchedule} filename="schedule-export.csv" />
+        </div>   
       </div>
       <p style={{ opacity: 0.7, marginTop: 4, marginBottom: 24, fontSize: "0.9rem" }}>
         Record attendance for each training session. Sessions come from the schedule.

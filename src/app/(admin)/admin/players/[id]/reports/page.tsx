@@ -31,12 +31,17 @@ export default async function PlayerReportsPage({ params }: { params: { id: stri
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 
   const player = await prisma.player.findUnique({ where: { id: params.id }, include: { user: true } });
-  if (!player) return notFound();
-  if (accessibleTeamIds && (!player.teamId || !accessibleTeamIds.includes(player.teamId))) {
-    return notFound();
-  }
+if (!player) return notFound();
+if (accessibleTeamIds && (!player.teamId || !accessibleTeamIds.includes(player.teamId))) {
+  return notFound();
+}
 
-  const [trainingCount, assessmentsCount, physicalCount, matchesCount] = await Promise.all([
+const activeInjuries = await prisma.injuryRecord.findMany({
+  where: { playerId: player.id, status: "ACTIVE" },
+  orderBy: { dateOccurred: "desc" },
+});
+
+const [trainingCount, assessmentsCount, physicalCount, matchesCount] = await Promise.all([
     prisma.trainingAttendance.count({ where: { playerId: player.id } }),
     prisma.developmentAssessment.count({ where: { playerId: player.id } }),
     prisma.physicalTest.count({ where: { playerId: player.id } }),
@@ -50,14 +55,31 @@ export default async function PlayerReportsPage({ params }: { params: { id: stri
     matchesCount > 0 ? "matches" :
     "attendance";
 
-  return (
+    return (
     <div>
       <Link href="/admin/players" style={{ fontSize: "0.9rem", opacity: 0.7 }}>&larr; All players</Link>
 
       <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12 }}>
         {playerName(player).toUpperCase()} — REPORTS
-      </h1>
+      </h1> 
+        
+        <Link href={`/admin/players/${player.id}/development-index`} style={{ fontSize: "0.9rem" }}>View Development Index &rarr;</Link>
 
+        {activeInjuries.length > 0 && (
+          < div style={{ background: "#fdecec", border: "1px solid var(--card-red)", borderRadius: 8, padding: 16, margin: "16px 0", }}>
+        {activeInjuries.map((i) => (
+          <p key={i.id} style={{ fontSize: "0.9rem", margin: "4px 0" }}>
+          🚑 <strong>{i.injuryType}</strong> since{" "}
+          {i.dateOccurred.toLocaleDateString()}
+          {i.expectedReturnDate &&
+          ` · expected back ${i.expectedReturnDate.toLocaleDateString()}`}
+          </p>
+        ))}
+
+        <Link href={`/admin/players/${player.id}/injuries/new`} style={{ fontSize: "0.85rem" }}> Log another injury </Link>
+    </div>
+    )}
+      
       <ReportTabs
         defaultActive={defaultActive}
         labels={{

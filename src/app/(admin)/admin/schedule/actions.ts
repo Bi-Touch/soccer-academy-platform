@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { notifyTeamOfNewEvent } from "@/lib/notifications";
+import { toCsv } from "@/lib/csv";
 import { requireStaff, getAccessibleTeamIds, assertTeamAccess } from "@/lib/permissions";
 
 export async function createEvent(formData: FormData) {
@@ -104,4 +105,22 @@ export async function deleteEvent(eventId: string) {
   revalidatePath("/admin/schedule");
   revalidatePath("/portal/schedule");
   revalidatePath("/fixtures");
+}
+
+export async function exportSchedule(): Promise<string> {
+  const user = await requireStaff();
+  const accessibleTeamIds = await getAccessibleTeamIds(user);
+  const events = await prisma.scheduleEvent.findMany({
+    where: accessibleTeamIds ? { teamId: { in: accessibleTeamIds } } : undefined,
+    include: { team: true },
+    orderBy: { startsAt: "asc" },
+  });
+  const headers = ["team", "type", "date", "time", "title", "location", "opponent", "homeScore", "awayScore", "description"];
+  const rows = events.map((e) => [
+    e.team.name, e.type,
+    e.startsAt.toISOString().slice(0, 10), e.startsAt.toISOString().slice(11, 16),
+    e.title, e.location ?? "", e.opponent ?? "",
+    e.homeScore?.toString() ?? "", e.awayScore?.toString() ?? "", e.description ?? "",
+  ]);
+  return toCsv(headers, rows);
 }
