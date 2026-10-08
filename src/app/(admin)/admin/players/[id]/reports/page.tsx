@@ -87,11 +87,13 @@ const [trainingCount, assessmentsCount, physicalCount, matchesCount] = await Pro
           assessments: { title: "Assessments", body: "Development scores across technical, tactical, physical, and mental domains." },
           physical: { title: "Physical Tests", body: "Trend charts for every recorded fitness metric." },
           matches: { title: "Match Stats", body: "Goals, assists, passing accuracy, and defensive actions per match." },
+          injuries: { title: "Injuries", body: "Full injury history, recovery status, and return-to-play details.", },
         }}
         attendance={await renderTraining(player.id)}
         assessments={await renderAssessments(player.id)}
         physical={await renderPhysical(player.id)}
         matches={await renderMatches(player.id)}
+        injuries={await renderInjuries(player.id)}
       />
     </div>
   );
@@ -377,6 +379,191 @@ async function renderPhysical(playerId: string) {
         </table>
       </div>
     </>
+  );
+}
+
+async function renderInjuries(playerId: string) {
+  const injuries = await prisma.injuryRecord.findMany({
+    where: { playerId },
+    orderBy: { dateOccurred: "desc" },
+  });
+
+  if (injuries.length === 0) {
+    return (
+      <div>
+        <p style={{ opacity: 0.7 }}>
+          No injuries have been recorded for this player.
+        </p>
+
+        <Link
+          href={`/admin/players/${playerId}/injuries/new`}
+          className="button"
+          style={{
+            display: "inline-block",
+            marginTop: 16,
+            fontSize: "0.85rem",
+          }}
+        >
+          + Log Injury
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap",
+          marginBottom: 16,
+        }}
+      >
+        <div>
+          <h2
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              color: "var(--pitch)",
+            }}
+          >
+            INJURY HISTORY
+          </h2>
+
+          <p
+            style={{
+              fontSize: "0.8rem",
+              opacity: 0.7,
+              marginTop: 4,
+            }}
+          >
+            {injuries.length} recorded{" "}
+            {injuries.length === 1 ? "injury" : "injuries"}
+          </p>
+        </div>
+
+        <Link
+          href={`/admin/players/${playerId}/injuries/new`}
+          className="button"
+          style={{
+            fontSize: "0.85rem",
+            padding: "8px 16px",
+          }}
+        >
+          + Log Injury
+        </Link>
+      </div>
+
+      <div
+        style={{
+          ...cardStyle,
+          padding: 0,
+          overflowX: "auto",
+        }}
+      >
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            minWidth: 900,
+          }}
+        >
+          <thead>
+            <tr
+              style={{
+                textAlign: "left",
+                borderBottom: "2px solid var(--ink)",
+                fontSize: "0.8rem",
+              }}
+            >
+              <th style={{ padding: "12px 16px" }}>Date</th>
+              <th style={{ padding: "12px 16px" }}>Injury</th>
+              <th style={{ padding: "12px 16px" }}>Description</th>
+              <th style={{ padding: "12px 16px" }}>Status</th>
+              <th style={{ padding: "12px 16px" }}>Expected Return</th>
+              <th style={{ padding: "12px 16px" }}>Actual Return</th>
+              <th style={{ padding: "12px 16px" }}>Recorded By</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {injuries.map((injury) => {
+              const isActive = injury.status === "ACTIVE";
+
+              return (
+                <tr
+                  key={injury.id}
+                  style={{
+                    borderBottom: "1px solid #e3ded2",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  <td style={{ padding: "10px 16px" }}>
+                    {injury.dateOccurred.toLocaleDateString()}
+                  </td>
+
+                  <td
+                    style={{
+                      padding: "10px 16px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {injury.injuryType}
+                  </td>
+
+                  <td
+                    style={{
+                      padding: "10px 16px",
+                      opacity: 0.75,
+                      maxWidth: 280,
+                    }}
+                  >
+                    {injury.description ?? "—"}
+                  </td>
+
+                  <td style={{ padding: "10px 16px" }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "4px 8px",
+                        borderRadius: 4,
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        background: isActive ? "#fdecec" : "#edf7ed",
+                        color: isActive
+                          ? "var(--card-red)"
+                          : "var(--pitch)",
+                      }}
+                    >
+                      {isActive ? "Active" : "Recovered"}
+                    </span>
+                  </td>
+
+                  <td style={{ padding: "10px 16px" }}>
+                    {injury.expectedReturnDate
+                      ? injury.expectedReturnDate.toLocaleDateString()
+                      : "—"}
+                  </td>
+
+                  <td style={{ padding: "10px 16px" }}>
+                    {injury.actualReturnDate
+                      ? injury.actualReturnDate.toLocaleDateString()
+                      : "—"}
+                  </td>
+
+                  <td style={{ padding: "10px 16px" }}>
+                    {injury.recordedBy ?? "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

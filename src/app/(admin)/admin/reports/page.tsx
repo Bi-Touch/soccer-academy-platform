@@ -68,6 +68,7 @@ export default async function ReportsHubPage({ searchParams }: { searchParams: {
           assessments={await renderAssessments(activeTeam.id, activeTeam.players)}
           physical={await renderPhysical(activeTeam.id, activeTeam.players)}
           matches={await renderMatches(activeTeam.id)}
+          injuries={await renderInjuries(activeTeam.id)}
         />
       )}
     </div>
@@ -289,6 +290,177 @@ async function renderPhysical(teamId: string, players: Array<{id: string; user: 
         </div>
       ))}
     </div>
+  );
+}
+
+async function renderInjuries(teamId: string) {
+  const injuries = await prisma.injuryRecord.findMany({
+    where: {
+      player: {
+        teamId,
+      },
+    },
+    include: {
+      player: {
+        include: {
+          user: true,
+        },
+      },
+    },
+    orderBy: {
+      dateOccurred: "desc",
+    },
+  });
+
+  if (injuries.length === 0) {
+    return (
+      <p style={{ opacity: 0.7 }}>
+        No injuries have been recorded for this team yet.
+      </p>
+    );
+  }
+
+  const activeCount = injuries.filter((i) => i.status === "ACTIVE").length;
+  const recoveredCount = injuries.filter((i) => i.status === "RECOVERED").length;
+
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 24, marginBottom: 24, }}>
+        <div style={cardStyle}> 
+          <h2 style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", }}>
+            ACTIVE INJURIES
+          </h2>
+
+          <p
+            style={{ fontSize: "2rem", fontWeight: 700, color: activeCount > 0 ? "var(--card-red)" : "var(--pitch)", marginTop: 8, }}>
+            {activeCount}
+          </p>
+        </div>
+
+        <div style={cardStyle}>
+          <h2
+            style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", }}>
+            RECOVERED INJURIES
+          </h2>
+
+          <p
+            style={{ fontSize: "2rem", fontWeight: 700, color: "var(--pitch)", marginTop: 8, }}>
+            {recoveredCount}
+          </p>
+        </div>
+
+        <div style={cardStyle}>
+          <h2
+            style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", }}>
+            TOTAL RECORDED
+          </h2>
+
+          <p
+            style={{ fontSize: "2rem", fontWeight: 700, color: "var(--pitch)", marginTop: 8, }}>
+            {injuries.length}
+          </p>
+        </div>
+      </div>
+
+      <h2
+        style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 12, }}>
+        INJURY HISTORY
+      </h2>
+
+      <div
+        style={{ ...cardStyle, padding: 0, overflowX: "auto", }}>
+        <table
+          style={{ width: "100%", borderCollapse: "collapse", minWidth: 950, }}>
+          <thead>
+            <tr
+              style={{ textAlign: "left", borderBottom: "2px solid var(--ink)", }}>
+              <th style={{ padding: "12px 16px" }}>Player</th>
+              <th style={{ padding: "12px 16px" }}>Date</th>
+              <th style={{ padding: "12px 16px" }}>Injury</th>
+              <th style={{ padding: "12px 16px" }}>Description</th>
+              <th style={{ padding: "12px 16px" }}>Status</th>
+              <th style={{ padding: "12px 16px" }}>Expected Return</th>
+              <th style={{ padding: "12px 16px" }}>Actual Return</th>
+              <th style={{ padding: "12px 16px" }}>Recorded By</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {injuries.map((injury) => {
+              const isActive = injury.status === "ACTIVE";
+
+              return (
+                <tr
+                  key={injury.id}
+                  style={{
+                    borderBottom: "1px solid #e3ded2",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  <td style={{ padding: "10px 16px", fontWeight: 600 }}>
+                    <Link href={`/admin/players/${injury.playerId}/reports`}>
+                      {playerName(injury.player)}
+                    </Link>
+                  </td>
+
+                  <td style={{ padding: "10px 16px" }}>
+                    {injury.dateOccurred.toLocaleDateString()}
+                  </td>
+
+                  <td style={{ padding: "10px 16px", fontWeight: 600 }}>
+                    {injury.injuryType}
+                  </td>
+
+                  <td
+                    style={{
+                      padding: "10px 16px",
+                      opacity: 0.75,
+                      maxWidth: 280,
+                    }}
+                  >
+                    {injury.description ?? "—"}
+                  </td>
+
+                  <td style={{ padding: "10px 16px" }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "4px 8px",
+                        borderRadius: 4,
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        background: isActive ? "#fdecec" : "#edf7ed",
+                        color: isActive
+                          ? "var(--card-red)"
+                          : "var(--pitch)",
+                      }}
+                    >
+                      {isActive ? "Active" : "Recovered"}
+                    </span>
+                  </td>
+
+                  <td style={{ padding: "10px 16px" }}>
+                    {injury.expectedReturnDate
+                      ? injury.expectedReturnDate.toLocaleDateString()
+                      : "—"}
+                  </td>
+
+                  <td style={{ padding: "10px 16px" }}>
+                    {injury.actualReturnDate
+                      ? injury.actualReturnDate.toLocaleDateString()
+                      : "—"}
+                  </td>
+
+                  <td style={{ padding: "10px 16px" }}>
+                    {injury.recordedBy ?? "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
