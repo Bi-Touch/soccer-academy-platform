@@ -1,12 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-export function MobileNavReset({ children }: { children: React.ReactNode }) {
+export function MobileNavReset() {
   const pathname = usePathname();
-  return (
-    <div key={pathname} style={{ display: "contents" }}>
-      {children}
-    </div>
-  );
+
+  useEffect(() => {
+    const toggle = document.getElementById("nav-toggle") as HTMLInputElement | null;
+    if (toggle) toggle.checked = false;
+  }, [pathname]);
+
+  return null;
 }

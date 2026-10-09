@@ -114,9 +114,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      <MobileNavReset>
-        <input type="checkbox" id="nav-toggle" className="nav-toggle-checkbox" />
-      </MobileNavReset>  
+      <input type="checkbox" id="nav-toggle" className="nav-toggle-checkbox" />
+      <MobileNavReset/>  
       
         <label htmlFor="nav-toggle" className="nav-overlay" aria-hidden="true" />
 

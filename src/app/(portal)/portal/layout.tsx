@@ -79,8 +79,10 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      <MobileNavReset>
+     
         <input type="checkbox" id="nav-toggle" className="nav-toggle-checkbox" />
+        <MobileNavReset />
+
         <label htmlFor="nav-toggle" className="nav-overlay" aria-hidden="true" />
 
         <aside className="admin-sidebar" style={{ background: "var(--pitch-dark)" }}>
@@ -116,7 +118,6 @@ export default async function PortalLayout({ children }: { children: React.React
             )}
           </nav>
         </aside>
-      </MobileNavReset>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <header
