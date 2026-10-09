@@ -1,3 +1,4 @@
+
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -18,9 +19,15 @@ export default async function ParentDashboardPage() {
   if (!guardian) {
     return (
       <div>
-        <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)" }}>MY CHILDREN</h1>
+        <h1
+          className="display"
+          style={{ fontSize: "2.2rem", color: "var(--pitch)" }}
+        >
+          MY CHILDREN
+        </h1>
         <p style={{ opacity: 0.7, marginTop: 16 }}>
-          No players are linked to your account yet. If this seems wrong, contact the Academy.
+          No players are linked to your account yet. If this seems wrong,
+          contact the Academy.
         </p>
       </div>
     );
@@ -28,9 +35,21 @@ export default async function ParentDashboardPage() {
 
   return (
     <div>
-      <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)" }}>MY CHILDREN</h1>
+      <h1
+        className="display"
+        style={{ fontSize: "2.2rem", color: "var(--pitch)" }}
+      >
+        MY CHILDREN
+      </h1>
 
-      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div
+        style={{
+          marginTop: 24,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+        }}
+      >
         {guardian.players.map((p) => (
           <div
             key={p.id}
@@ -45,18 +64,67 @@ export default async function ParentDashboardPage() {
               gap: 16,
             }}
           >
-            <PlayerAvatar src={p.photoUrl} alt={playerName(p)} size={48} rounded />
+            <PlayerAvatar
+              src={p.photoUrl}
+              alt={playerName(p)}
+              size={48}
+              rounded
+            />
+
             <div style={{ flex: "1 1 200px" }}>
               <strong>{playerName(p)}</strong>
-              <div style={{ fontSize: "0.8rem", opacity: 0.7, marginTop: 2 }}>
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  opacity: 0.7,
+                  marginTop: 2,
+                }}
+              >
                 {p.team?.name ?? "Not yet assigned to a team"}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <Link href={`/portal/parent/${p.id}/profile`} style={{ fontSize: "0.9rem" }}>Profile</Link>
-              <Link href={`/portal/parent/${p.id}/stats`} style={{ fontSize: "0.9rem" }}>Stats</Link>
-              <Link href={`/portal/parent/${p.id}/schedule`} style={{ fontSize: "0.9rem" }}>Schedule</Link>
-              <Link href={`/portal/parent/${p.id}/consent`} style={{ fontSize: "0.9rem" }}>Consent</Link>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 16,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link
+                href={`/portal/parent/${p.id}/profile`}
+                style={{ fontSize: "0.9rem" }}
+              >
+                Profile
+              </Link>
+
+              <Link
+                href={`/portal/parent/${p.id}/stats`}
+                style={{ fontSize: "0.9rem" }}
+              >
+                Stats
+              </Link>
+
+              <Link
+                href={`/portal/parent/${p.id}/reports`}
+                style={{ fontSize: "0.9rem", fontWeight: 600 }}
+              >
+                Reports
+              </Link>
+
+              <Link
+                href={`/portal/parent/${p.id}/schedule`}
+                style={{ fontSize: "0.9rem" }}
+              >
+                Schedule
+              </Link>
+
+              <Link
+                href={`/portal/parent/${p.id}/consent`}
+                style={{ fontSize: "0.9rem" }}
+              >
+                Consent
+              </Link>
             </div>
           </div>
         ))}

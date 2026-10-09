@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -14,6 +15,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 const navLinkStyle = { textDecoration: "none", fontSize: "0.95rem" };
 const subLinkStyle = { ...navLinkStyle, fontSize: "0.85rem" };
+
 const groupLabelStyle: React.CSSProperties = {
   fontSize: "0.7rem",
   fontWeight: 600,
@@ -41,32 +43,71 @@ function ChevronIcon() {
   );
 }
 
-function ChildNavGroup({ id, name, playerId }: { id: string; name: string; playerId: string }) {
+function ChildNavGroup({
+  id,
+  name,
+  playerId,
+}: {
+  id: string;
+  name: string;
+  playerId: string;
+}) {
   return (
     <div>
       <input type="checkbox" id={id} className="nav-group-checkbox" />
+
       <label htmlFor={id} className="nav-group-header">
         <span style={groupLabelStyle}>{name}</span>
         <ChevronIcon />
       </label>
+
       <div className="nav-group-content">
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 10, paddingLeft: 12 }}>
-          <Link href={`/portal/parent/${playerId}/profile`} style={subLinkStyle}>Profile</Link>
-          <Link href={`/portal/parent/${playerId}/stats`} style={subLinkStyle}>Stats</Link>
-          <Link href={`/portal/parent/${playerId}/schedule`} style={subLinkStyle}>Schedule</Link>
-          <Link href={`/portal/parent/${playerId}/consent`} style={subLinkStyle}>Consent</Link>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            paddingTop: 10,
+            paddingLeft: 12,
+          }}
+        >
+          <Link href={`/portal/parent/${playerId}/profile`} style={subLinkStyle}>
+            Profile
+          </Link>
+
+          <Link href={`/portal/parent/${playerId}/stats`} style={subLinkStyle}>
+            Stats
+          </Link>
+
+          <Link href={`/portal/parent/${playerId}/reports`} style={subLinkStyle}>
+            Reports
+          </Link>
+
+          <Link href={`/portal/parent/${playerId}/schedule`} style={subLinkStyle}>
+            Schedule
+          </Link>
+
+          <Link href={`/portal/parent/${playerId}/consent`} style={subLinkStyle}>
+            Consent
+          </Link>
         </div>
       </div>
     </div>
   );
 }
 
-export default async function PortalLayout({ children }: { children: React.ReactNode }) {
+export default async function PortalLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const session = await getServerSession(authOptions);
   const role = session?.user?.role;
 
   const player = session?.user?.id
-    ? await prisma.player.findUnique({ where: { userId: session.user.id } })
+    ? await prisma.player.findUnique({
+        where: { userId: session.user.id },
+      })
     : null;
 
   const guardian =
@@ -79,47 +120,111 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-     
-        <input type="checkbox" id="nav-toggle" className="nav-toggle-checkbox" />
-        <MobileNavReset />
+      <input
+        type="checkbox"
+        id="nav-toggle"
+        className="nav-toggle-checkbox"
+      />
 
-        <label htmlFor="nav-toggle" className="nav-overlay" aria-hidden="true" />
+      <MobileNavReset />
 
-        <aside className="admin-sidebar" style={{ background: "var(--pitch-dark)" }}>
-          <div className="display sidebar-brand-text" style={{ fontSize: "1.4rem", marginBottom: 32 }}>ACADEMY</div>
+      <label
+        htmlFor="nav-toggle"
+        className="nav-overlay"
+        aria-hidden="true"
+      />
 
-          <nav style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: "0.95rem" }}>
-            {role === "PARENT" ? (
-              <>
-                <Link href="/portal/parent" style={navLinkStyle}>My Children</Link>
+      <aside
+        className="admin-sidebar"
+        style={{ background: "var(--pitch-dark)" }}
+      >
+        <div
+          className="display sidebar-brand-text"
+          style={{ fontSize: "1.4rem", marginBottom: 32 }}
+        >
+          ACADEMY
+        </div>
 
-                {guardian && guardian.players.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 4 }}>
-                    {guardian.players.map((p) => (
-                      <ChildNavGroup key={p.id} id={`child-${p.id}`} name={playerName(p)} playerId={p.id} />
-                    ))}
-                  </div>
-                )}
+        <nav
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            fontSize: "0.95rem",
+          }}
+        >
+          {role === "PARENT" ? (
+            <>
+              <Link href="/portal/parent" style={navLinkStyle}>
+                My Children
+              </Link>
 
-                <Link href="/portal/settings" style={navLinkStyle}>Settings</Link>
-              </>
-            ) : (
-              <>
-                <Link href="/portal/dashboard" style={navLinkStyle}>Dashboard</Link>
-                <Link href="/portal/profile" style={navLinkStyle}>My Profile</Link>
-                <Link href="/portal/schedule" style={navLinkStyle}>Schedule</Link>
-                <Link href="/portal/videos" style={navLinkStyle}>Videos</Link>
-                <Link href="/portal/settings" style={navLinkStyle}>Settings</Link>
-                <Link href="/portal/leaderboard" style={navLinkStyle}>Leaderboard</Link>
-              </>
-            )}
-            {(role === "ADMIN" || role === "COACH") && (
-              <Link href="/admin/players" style={{ textDecoration: "none", opacity: 0.8 }}>&larr; Staff Admin</Link>
-            )}
-          </nav>
-        </aside>
+              {guardian && guardian.players.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 16,
+                    marginTop: 4,
+                  }}
+                >
+                  {guardian.players.map((p) => (
+                    <ChildNavGroup
+                      key={p.id}
+                      id={`child-${p.id}`}
+                      name={playerName(p)}
+                      playerId={p.id}
+                    />
+                  ))}
+                </div>
+              )}
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+              <Link href="/portal/settings" style={navLinkStyle}>
+                Settings
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/portal/dashboard" style={navLinkStyle}>
+                Dashboard
+              </Link>
+              <Link href="/portal/profile" style={navLinkStyle}>
+                My Profile
+              </Link>
+              <Link href="/portal/schedule" style={navLinkStyle}>
+                Schedule
+              </Link>
+              <Link href="/portal/videos" style={navLinkStyle}>
+                Videos
+              </Link>
+              <Link href="/portal/settings" style={navLinkStyle}>
+                Settings
+              </Link>
+              <Link href="/portal/leaderboard" style={navLinkStyle}>
+                Leaderboard
+              </Link>
+            </>
+          )}
+
+          {(role === "ADMIN" || role === "COACH") && (
+            <Link
+              href="/admin/players"
+              style={{ textDecoration: "none", opacity: 0.8 }}
+            >
+              &larr; Staff Admin
+            </Link>
+          )}
+        </nav>
+      </aside>
+
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+        }}
+      >
         <header
           className="admin-header"
           style={{
@@ -134,9 +239,14 @@ export default async function PortalLayout({ children }: { children: React.React
             zIndex: 20,
           }}
         >
-          <label htmlFor="nav-toggle" className="nav-toggle-label" aria-label="Toggle menu">
+          <label
+            htmlFor="nav-toggle"
+            className="nav-toggle-label"
+            aria-label="Toggle menu"
+          >
             &#9776;
           </label>
+
           <div style={{ marginLeft: "auto" }}>
             <UserMenu
               name={session?.user?.name ?? ""}
@@ -146,7 +256,15 @@ export default async function PortalLayout({ children }: { children: React.React
           </div>
         </header>
 
-        <main className="admin-main" style={{ flex: 1, padding: 40, background: "var(--chalk)", minWidth: 0 }}>
+        <main
+          className="admin-main"
+          style={{
+            flex: 1,
+            padding: 40,
+            background: "var(--chalk)",
+            minWidth: 0,
+          }}
+        >
           {children}
         </main>
       </div>
