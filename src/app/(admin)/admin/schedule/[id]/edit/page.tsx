@@ -20,10 +20,10 @@ export default async function EditEventPage({ params }: { params: { id: string }
   const updateWithId = updateEvent.bind(null, event.id);
 
   return (
-    <div>
+    <div className="form-page">
       <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>EDIT EVENT</h1>
 
-      <form action={updateWithId} style={{ maxWidth: 480, marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+      <form action={updateWithId} style={{ maxWidth: "100%", marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
         <label>
           Type
           <select name="type" defaultValue={event.type} style={{ display: "block", width: "100%", padding: 10, marginTop: 4 }}>

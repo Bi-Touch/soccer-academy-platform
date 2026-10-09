@@ -32,7 +32,7 @@ export default async function EditPlayerPage({ params }: { params: { id: string 
   const dobValue = player.dateOfBirth ? player.dateOfBirth.toISOString().slice(0, 10) : "";
 
   return (
-    <div>
+    <div className="form-page">
       <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)", marginBottom: 24 }}>
         EDIT PLAYER
       </h1>

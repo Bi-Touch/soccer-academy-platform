@@ -11,10 +11,10 @@ export default async function NewEventPage() {
   });
 
   return (
-    <div>
+    <div className="form-page">
       <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>ADD EVENT</h1>
 
-      <form action={createEvent} style={{ maxWidth: 480, marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+      <form action={createEvent} style={{ maxWidth: "100%", marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
         <label>
           Team
           <select name="teamId" required style={{ display: "block", width: "100%", padding: 10, marginTop: 4 }}>

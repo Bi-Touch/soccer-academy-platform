@@ -19,7 +19,7 @@ export default async function NewAssessmentPage({ params }: { params: { id: stri
   const createWithId = createAssessment.bind(null, player.id);
 
   return (
-    <div>
+    <div className="form-page">
       <Link href="/admin/assessments" style={{ fontSize: "0.9rem", opacity: 0.7 }}>
         &larr; All assessments
       </Link>

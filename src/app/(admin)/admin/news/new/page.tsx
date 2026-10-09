@@ -2,10 +2,10 @@ import { createNewsPost } from "../actions";
 
 export default function NewNewsPostPage() {
   return (
-    <div>
+    <div className="form-page">
       <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>ADD POST</h1>
 
-      <form action={createNewsPost} style={{ maxWidth: 560, marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+      <form action={createNewsPost} style={{ maxWidth: "100%", marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
         <label>
           Title
           <input name="title" required style={{ display: "block", width: "100%", padding: 10, marginTop: 4 }} />
