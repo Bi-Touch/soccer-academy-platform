@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { playerName } from "@/lib/playerDisplay";
+import { exportPhysicalTests } from "./actions";
+import { ExportCsvButton } from "@/components/ExportCsvButton";
 
 const rowStyle: React.CSSProperties = {
   background: "white",
@@ -33,7 +35,7 @@ export default async function AdminPhysicalTestsPage() {
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>PHYSICAL TESTS</h1>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Link href="/admin/physical-tests/import" className="button outline">Import CSV</Link>
-          
+          <ExportCsvButton action={exportPhysicalTests} filename="physical-tests-export.csv" />
         </div>  
       </div>
       <p style={{ opacity: 0.7, marginTop: 4, fontSize: "0.9rem" }}>

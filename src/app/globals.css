@@ -125,6 +125,10 @@ a {
   grid-template-columns: repeat(5, 1fr);
 }
 
+textarea {
+  resize: none !important;
+}
+
 /* ───────────────────────────────────────────────
    Admin / portal sidebar
    ─────────────────────────────────────────────── */

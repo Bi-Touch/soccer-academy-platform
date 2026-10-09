@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { playerName } from "@/lib/playerDisplay";
+import { ExportCsvButton } from "@/components/ExportCsvButton";
+import { exportAssessments } from "./actions";
 
 const rowStyle: React.CSSProperties = {
   background: "white",
@@ -31,9 +33,11 @@ export default async function AdminAssessmentsPage() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>ASSESSMENTS</h1>
-        <Link href="/admin/assessments/import" className="button outline">Import CSV</Link>
-
-      </div>  
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <Link href="/admin/assessments/import" className="button outline">Import CSV</Link>
+          <ExportCsvButton action={exportAssessments} filename="assessments-export.csv" />
+        </div>
+      </div>
       <p style={{ opacity: 0.7, marginTop: 4, fontSize: "0.9rem" }}>
         Log a development assessment for a player. History and charts live under each player's Reports.
       </p>

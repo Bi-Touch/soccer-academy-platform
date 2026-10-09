@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ExportCsvButton } from "@/components/ExportCsvButton";
-import { exportSchedule } from "../schedule/actions";
+import { exportTrainingLog } from "./actions";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { SearchableTable } from "@/components/SearchableTable";
 
@@ -56,7 +56,7 @@ export default async function TrainingListPage() {
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>TRAINING LOG</h1>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Link href="/admin/training/import" className="button outline">Import CSV</Link>
-          <ExportCsvButton action={exportSchedule} filename="schedule-export.csv" />
+          <ExportCsvButton action={exportTrainingLog} filename="training-log-export.csv" />
         </div>   
       </div>
       <p style={{ opacity: 0.7, marginTop: 4, marginBottom: 24, fontSize: "0.9rem" }}>
