@@ -109,3 +109,22 @@ export async function createPhysicalTest(playerId: string, formData: FormData) {
   revalidatePath("/admin/physical-tests");
   redirect(`/admin/players/${playerId}/reports`);
 }
+
+export async function deletePhysicalTest(testId: string) {
+  const user = await requireStaff();
+  const accessibleTeamIds = await getAccessibleTeamIds(user);
+
+  const test = await prisma.physicalTest.findUnique({
+    where: { id: testId },
+    include: { player: true },
+  });
+  if (!test) return;
+  assertTeamAccess(accessibleTeamIds, test.player.teamId);
+
+  // PhysicalTestResult rows are removed automatically (onDelete: Cascade).
+  await prisma.physicalTest.delete({ where: { id: testId } });
+
+  revalidatePath(`/admin/players/${test.playerId}/reports`);
+  revalidatePath("/admin/physical-tests");
+  revalidatePath("/admin/reports");
+}

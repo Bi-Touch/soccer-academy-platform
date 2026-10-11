@@ -10,6 +10,8 @@ import { DOMAINS, DOMAIN_LABELS } from "@/lib/assessmentAttributes";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
 import { MATCH_STAT_GROUPS } from "@/lib/matchStats";
 import { playerName } from "@/lib/playerDisplay";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { deletePhysicalTest } from "../physical-tests/actions";
 
 const cardStyle: React.CSSProperties = {
   background: "#fff",
@@ -362,6 +364,7 @@ async function renderPhysical(playerId: string) {
               {PHYSICAL_TEST_METRICS.map((m) => (
                 <th key={m.key} style={{ padding: "12px 8px" }}>{m.label}</th>
               ))}
+              <th style={{ padding: "12px 16px" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -377,6 +380,16 @@ async function renderPhysical(playerId: string) {
                     </td>
                   );
                 })}
+                <td style={{ padding: "10px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
+                  <form action={deletePhysicalTest.bind(null, t.id)}>
+                    <ConfirmSubmitButton
+                     message={`Delete the physical test from ${t.testedAt.toLocaleDateString()}? All results from that day will be removed. This cannot be undone.`}
+                     style={{ background: "none", border: "none", color: "var(--card-red)", cursor: "pointer", fontSize: "0.85rem", padding: 0 }}
+                  >
+                    Delete
+                   </ConfirmSubmitButton>  
+                  </form>
+                </td>
               </tr>
             ))}
           </tbody>
