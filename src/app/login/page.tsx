@@ -177,6 +177,12 @@ export default function LoginPage() {
             {submitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
+
+        <p style={{ textAlign: "center", marginTop: 20, fontSize: "0.85rem" }}>
+          New to the Academy?{" "}
+          <a href="/register/player" style={{ color: "var(--pitch)", fontWeight: 600 }}>Register your child</a>
+        </p>
+
       </div>
     </div>
   );

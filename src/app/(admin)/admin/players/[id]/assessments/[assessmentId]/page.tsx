@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { playerName } from "@/lib/playerDisplay";
 import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { DOMAINS, DOMAIN_LABELS, DOMAIN_COLORS } from "@/lib/assessmentAttributes";
+import { playerName } from "@/lib/playerDisplay";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { deleteAssessment } from "./actions";
 
 export default async function AssessmentDetailPage({ params }: { params: { id: string; assessmentId: string } }) {
   const user = await getSessionUser();
@@ -21,25 +23,45 @@ export default async function AssessmentDetailPage({ params }: { params: { id: s
   });
   if (!assessment || assessment.playerId !== player.id) return notFound();
 
+  const deleteWithId = deleteAssessment.bind(null, assessment.id);
+
   return (
     <div>
       <Link href={`/admin/players/${player.id}/reports`} style={{ fontSize: "0.9rem", opacity: 0.7 }}>
-        &larr; All assessments
+        &larr; Back to reports
       </Link>
 
-      <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12 }}>
-        {playerName(player).toUpperCase()}
-      </h1>
-      <p style={{ opacity: 0.7, fontSize: "0.9rem", marginTop: 4 }}>
-        {assessment.assessedAt.toLocaleDateString()}
-        {assessment.assessedBy ? ` · ${assessment.assessedBy}` : ""}
-      </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+        <div>
+          <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)" }}>
+            {playerName(player).toUpperCase()}
+          </h1>
+          <p style={{ opacity: 0.7, fontSize: "0.9rem", marginTop: 4 }}>
+            {assessment.assessedAt.toLocaleDateString()}
+            {assessment.assessedBy ? ` · ${assessment.assessedBy}` : ""}
+          </p>
+        </div>
+
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <Link href={`/admin/players/${player.id}/assessments/${assessment.id}/edit`} className="button outline" style={{ fontSize: "0.85rem" }}>
+            Edit
+          </Link>
+          <form action={deleteWithId}>
+            <ConfirmSubmitButton
+              message="Delete this assessment? This cannot be undone."
+              style={{ background: "none", border: "1px solid var(--card-red)", color: "var(--card-red)", padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontSize: "0.85rem" }}
+            >
+              Delete
+            </ConfirmSubmitButton>
+          </form>
+        </div>
+      </div>
 
       {assessment.summary && (
         <p style={{ marginTop: 20, maxWidth: 600, lineHeight: 1.6 }}>{assessment.summary}</p>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 32, maxWidth: 640 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 24, marginTop: 32, maxWidth: 640 }}>
         {DOMAINS.map((domain) => {
           const domainScores = assessment.scores.filter((s) => s.domain === domain);
           if (domainScores.length === 0) return null;

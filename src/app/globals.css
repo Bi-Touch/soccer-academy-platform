@@ -22,7 +22,6 @@ body {
   color: var(--ink);
   font-family: 'Source Sans 3', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  height: 100%;
 }
 
 body {
@@ -294,8 +293,11 @@ textarea {
    Layout helpers
    ─────────────────────────────────────────────── */
 
-html, body {
+html {
   overflow-x: hidden;
+}
+body {
+  overflow-x: clip;
 }
 
 .report-grid {

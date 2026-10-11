@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 import { StatusPill } from "@/components/StatusPill";
 import { SearchableTable } from "@/components/SearchableTable";
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 
 export default async function AdminRegistrationsPage({
   searchParams,
@@ -35,6 +36,13 @@ export default async function AdminRegistrationsPage({
   return (
     <div>
       <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>PLAYER REGISTRATIONS</h1>
+
+      <div style={{ background: "white", border: "1px solid #e3ded2", borderRadius: 8, padding: 16, margin: "16px 0" }}>
+        <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 8 }}>
+            Public registration link — share this with parents
+        </p>
+       <CopyLinkButton path="/register/player" />
+      </div>
 
       {searchParams.tempPassword && searchParams.resetGuardianEmail && (
         <div style={{ background: "#fdf3e2", border: "1px solid var(--floodlight)", borderRadius: 8, padding: 20, margin: "16px 0" }}>

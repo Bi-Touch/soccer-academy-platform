@@ -263,6 +263,7 @@ async function renderAssessments(playerId: string) {
               <th style={{ padding: "12px 16px" }}>Tactical</th>
               <th style={{ padding: "12px 16px" }}>Physical</th>
               <th style={{ padding: "12px 16px" }}>Mental</th>
+              <th style={{ padding: "12px 16px" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -278,6 +279,9 @@ async function renderAssessments(playerId: string) {
                   <td style={{ padding: "10px 16px" }}>{avgs[1].value || "—"}</td>
                   <td style={{ padding: "10px 16px" }}>{avgs[2].value || "—"}</td>
                   <td style={{ padding: "10px 16px" }}>{avgs[3].value || "—"}</td>
+                  <td style={{ padding: "10px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
+                    <Link href={`/admin/players/${playerId}/assessments/${a.id}/edit`} style={{ fontSize: "0.85rem" }}>Edit</Link>
+                  </td>
                 </tr>
               );
             })}
