@@ -389,6 +389,20 @@ body {
   font-size: 0.9rem;
 }
 
+.cookie-settings-trigger {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1000;
+}
+
+@media (max-width: 640px) {
+  .cookie-settings-trigger {
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
 @media (max-width: 900px) {
   .chart-grid-3 {
     grid-template-columns: 1fr;
