@@ -14,6 +14,7 @@ export async function createVideo(formData: FormData) {
   const url = String(formData.get("url") || "").trim();
   const thumbnailUrl = String(formData.get("thumbnailUrl") || "").trim() || null;
   const teamId = String(formData.get("teamId") || "").trim() || null;
+  const playerIds = [...new Set(formData.getAll("playerIds").map(String).filter(Boolean))];
 
   if (!title || !url) {
     throw new Error("Title and video URL are required.");
@@ -24,8 +25,36 @@ export async function createVideo(formData: FormData) {
     assertTeamAccess(accessibleTeamIds, teamId);
   }
 
+  // Tagged players must exist, and coaches may only tag players on their own teams.
+  if (playerIds.length > 0) {
+    const tagged = await prisma.player.findMany({
+      where: { id: { in: playerIds } },
+      select: { id: true, teamId: true },
+    });
+    if (tagged.length !== playerIds.length) {
+      throw new Error("One or more selected players were not found.");
+    }
+        if (teamId) {
+      for (const p of tagged) {
+        if (p.teamId !== teamId) {
+          throw new Error("Tagged players must belong to the selected team.");
+        }
+      }
+    }
+    if (accessibleTeamIds !== null) {
+      for (const p of tagged) assertTeamAccess(accessibleTeamIds, p.teamId);
+    }
+  }
+
   await prisma.video.create({
-    data: { title, description, url, thumbnailUrl, teamId },
+    data: {
+      title,
+      description,
+      url,
+      thumbnailUrl,
+      teamId,
+      players: { connect: playerIds.map((id) => ({ id })) },
+    },
   });
 
   revalidatePath("/admin/videos");

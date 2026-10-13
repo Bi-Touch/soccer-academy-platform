@@ -6,6 +6,7 @@ const ADMIN_ONLY_PREFIXES = ["/admin/teams", "/admin/coaches", "/admin/news", "/
 const PLAYER_ONLY_PORTAL_PREFIXES = ["/portal/dashboard", "/portal/profile", "/portal/schedule", "/portal/videos", "/portal/leaderboard"];
 
 function homeFor(role: string | undefined) {
+  if (role === "ANALYST") return "/analytics";
   if (role === "PARENT") return "/portal/parent";
   if (role === "ADMIN" || role === "COACH") return "/admin/players";
   return "/portal/dashboard";
@@ -20,12 +21,18 @@ export default withAuth(
       return NextResponse.redirect(new URL(homeFor(role), req.url));
     }
 
+    if (pathname.startsWith("/analytics") && role !== "ADMIN" && role !== "COACH" && role !== "ANALYST") {
+      return NextResponse.redirect(new URL(homeFor(role), req.url));
+    }
+
+    if (role === "ANALYST" && pathname.startsWith("/portal")) {
+      return NextResponse.redirect(new URL("/analytics", req.url));
+    }
+
     if (role === "COACH" && ADMIN_ONLY_PREFIXES.some((p) => pathname.startsWith(p))) {
       return NextResponse.redirect(new URL("/admin/players", req.url));
     }
 
-    // A parent has no Player record of their own — keep them out of the
-    // player-facing portal pages, which assume a 1:1 user-to-player link.
     if (role === "PARENT" && PLAYER_ONLY_PORTAL_PREFIXES.some((p) => pathname.startsWith(p))) {
       return NextResponse.redirect(new URL("/portal/parent", req.url));
     }
@@ -40,5 +47,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/portal/:path*", "/admin/:path*"],
+  matcher: ["/portal/:path*", "/admin/:path*", "/analytics/:path*"],
 };

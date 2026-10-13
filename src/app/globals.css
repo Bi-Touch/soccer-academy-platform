@@ -389,6 +389,27 @@ body {
   font-size: 0.9rem;
 }
 
+.data-row:hover td {
+  background: #faf8f3;
+}
+
+@media print {
+  .analytics-header,
+  .analytics-filters,
+  .analytics-tabs,
+  .no-print {
+    display: none !important;
+  }
+  .data-table-scroll {
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+  }
+  body {
+    background: white;
+  }
+}
+
 .cookie-settings-trigger {
   position: fixed;
   right: 20px;

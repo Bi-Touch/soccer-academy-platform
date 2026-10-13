@@ -36,7 +36,9 @@ export default function LoginPage() {
       router.push("/admin/players");
     } else if (role === "PARENT") {
       router.push("/portal/parent");
-    } else {
+    } else if (role === "ANALYST") {
+      router.push("/analytics");
+    }  else {
       router.push("/portal/dashboard");
     }
     router.refresh();

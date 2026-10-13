@@ -16,6 +16,7 @@ datasource db {
 enum Role {
   ADMIN
   COACH
+  ANALYST
   PARENT // NEW: parent/guardian login (one login per guardian)
   PLAYER
 }
@@ -119,6 +120,7 @@ model Player {
   physicalTests      PhysicalTest[]
   matchPerformances  MatchPerformance[]
   injuryRecords      InjuryRecord[]
+  videos             Video[]
 }
 
 model Coach {
@@ -315,6 +317,7 @@ model Video {
   description  String?
   url          String
   thumbnailUrl String?
+  players Player[]
   createdAt    DateTime @default(now())
 }
 

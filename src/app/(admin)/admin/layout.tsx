@@ -148,6 +148,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <NavGroup id="group-reports" label="Reports" icon={ICONS.barChart} firstHref="/admin/training/reports">
               <Link href="/admin/training/reports" style={navLinkStyle}>Training Reports</Link>
               <Link href="/admin/reports" style={navLinkStyle}>Team Reports</Link>
+              <Link href="/analytics" style={navLinkStyle}>Analytics Dashboard</Link>
             </NavGroup>
 
             <NavGroup id="group-content" label="Content" icon={ICONS.image} firstHref={isAdmin ? "/admin/news" : "/admin/videos"}>
@@ -159,6 +160,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             {isAdmin && (
               <NavGroup id="group-admin" label="Admin" icon={ICONS.shield} firstHref="/admin/registrations">
                 <Link href="/admin/registrations" style={navLinkStyle}>Registrations</Link>
+                <Link href="/admin/analysts" style={navLinkStyle}>Analysts</Link>
                 <Link href="/admin/enquiries" style={navLinkStyle}>Enquiries</Link>
               </NavGroup>
             )}
