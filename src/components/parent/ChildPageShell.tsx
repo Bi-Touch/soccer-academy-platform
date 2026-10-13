@@ -1,100 +1,46 @@
-
 import Link from "next/link";
-import {
-  CHILD_SECTIONS,
-  type ChildSectionKey,
-} from "./ChildMenu";
+import { ChildHeader } from "./ChildHeader";
+import { ChildMenu, CHILD_SECTIONS, type ChildSectionKey } from "./ChildMenu";
 
 export function ChildPageShell({
   child,
   active,
   children,
 }: {
-  child: {
-    id: string;
-    name: string;
-    photoUrl: string | null;
-    teamName: string | null;
-  };
+  child: { id: string; name: string; photoUrl: string | null; teamName: string | null };
   active: ChildSectionKey;
   children: React.ReactNode;
 }) {
-  const section = CHILD_SECTIONS.find((s) => s.key === active);
-
-  if (!section) {
-    throw new Error(`Unknown child section: ${active}`);
-  }
+  const section = CHILD_SECTIONS.find((s) => s.key === active)!;
 
   return (
     <div style={{ maxWidth: 860, margin: "0 auto" }}>
-      <Link
-        href="/portal/parent"
-        style={{
-          display: "inline-block",
-          color: "var(--pitch)",
-          textDecoration: "none",
-          fontSize: "0.9rem",
-          fontWeight: 600,
-          marginBottom: 20,
-        }}
-      >
-        &larr; My Children
-      </Link>
+      <div style={{ background: "white", border: "1px solid #e3ded2", borderRadius: 12, padding: 18 }}>
+        <ChildHeader
+          name={child.name}
+          photoUrl={child.photoUrl}
+          subtitle={
+            <>
+              {child.teamName ?? "No team yet"} &middot;{" "}
+              <Link href="/portal/parent" style={{ textDecoration: "underline" }}>My Children</Link>
+            </>
+          }
+        />
 
-      <div
-        style={{
-          marginBottom: 24,
-          paddingBottom: 18,
-          borderBottom: "1px solid #e3ded2",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "0.75rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: "var(--pitch)",
-            fontWeight: 600,
-            marginBottom: 6,
-          }}
-        >
-          {section.label}
+        <div style={{ marginTop: 16 }}>
+          <ChildMenu playerId={child.id} active={active} />
         </div>
 
-        <h1
-          className="display"
-          style={{
-            fontSize: "2rem",
-            color: "var(--pitch)",
-            margin: 0,
-          }}
-        >
-          {section.title}
-        </h1>
-
-        <p
-          style={{
-            fontSize: "0.9rem",
-            opacity: 0.7,
-            marginTop: 8,
-            lineHeight: 1.6,
-          }}
-        >
-          {section.description}
-        </p>
-
-        <p
-          style={{
-            fontSize: "0.85rem",
-            opacity: 0.65,
-            marginTop: 10,
-          }}
-        >
-          {child.name} · {child.teamName ?? "No team yet"}
-        </p>
+        <div style={{ borderTop: "1px solid #ece8de", marginTop: 18, paddingTop: 16, display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <span style={{ color: "var(--pitch)", opacity: 0.8, marginTop: 2 }}>{section.icon}</span>
+          <div>
+            <div style={{ fontWeight: 700 }}>{section.title}</div>
+            <div style={{ fontSize: "0.85rem", opacity: 0.65, marginTop: 2 }}>{section.description}</div>
+          </div>
+        </div>
       </div>
 
-      {children}
+      <div style={{ marginTop: 24 }}>{children}</div>
     </div>
   );
 }
