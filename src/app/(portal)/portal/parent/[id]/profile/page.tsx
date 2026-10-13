@@ -1,54 +1,51 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { playerName } from "@/lib/playerDisplay";
+import { requireOwnedChild } from "@/lib/parentAccess";
+import { ChildPageShell } from "@/components/parent/ChildPageShell";
+import { formatDate } from "@/lib/dates";
 
-export default async function ParentPlayerProfilePage({ params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
+const cardStyle: React.CSSProperties = { background: "white", border: "1px solid #e3ded2", borderRadius: 8, padding: 20 };
 
-  const guardian = await prisma.parentGuardian.findUnique({ where: { userId: session.user.id } });
-  if (!guardian) return notFound();
+export default async function ParentChildProfilePage({ params }: { params: { id: string } }) {
+  const { player, child } = await requireOwnedChild(params.id);
 
-  const player = await prisma.player.findUnique({
-    where: { id: params.id },
-    include: { progressNotes: { orderBy: { createdAt: "desc" } }, team: true },
+  const notes = await prisma.progressNote.findMany({
+    where: { playerId: player.id },
+    orderBy: { createdAt: "desc" },
   });
-  if (!player || player.parentGuardianId !== guardian.id) return notFound();
+
+  const details: [string, string][] = [
+    ["Position", player.position ?? "Not set"],
+    ["Shirt number", player.shirtNumber != null ? `#${player.shirtNumber}` : "Not set"],
+    ["Team", player.team?.name ?? "Not yet assigned"],
+    ["Date of birth", player.dateOfBirth ? formatDate(player.dateOfBirth) : "Not set"],
+  ];
 
   return (
-    <div>
-      <Link href="/portal/parent" style={{ fontSize: "0.9rem", opacity: 0.7 }}>&larr; My Children</Link>
-      <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)", marginTop: 12 }}>
-        {playerName(player).toUpperCase()}
-      </h1>
-
-      <div style={{ marginTop: 24, background: "white", border: "1px solid #e3ded2", borderRadius: 8, padding: 32, maxWidth: 480, display: "flex", alignItems: "center", gap: 32 }}>
-        <PlayerAvatar src={player.photoUrl ?? null} alt={playerName(player)} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <p style={{ margin: 0 }}><strong>Name:</strong> {playerName(player)}</p>
-          <p style={{ margin: 0 }}><strong>Position:</strong> {player.position ?? "Not set"}</p>
-          <p style={{ margin: 0 }}><strong>Shirt number:</strong> {player.shirtNumber ?? "Not set"}</p>
-          <p style={{ margin: 0 }}><strong>Team:</strong> {player.team?.name ?? "Unassigned"}</p>
-          <p style={{ margin: 0 }}><strong>Date of birth:</strong> {player.dateOfBirth ? player.dateOfBirth.toLocaleDateString() : "Not set"}</p>
-        </div>
+    <ChildPageShell child={child} active="profile">
+      <div style={{ ...cardStyle, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 20 }}>
+        {details.map(([label, value]) => (
+          <div key={label}>
+            <div style={{ fontSize: "0.75rem", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
+            <div style={{ fontWeight: 600, marginTop: 4 }}>{value}</div>
+          </div>
+        ))}
       </div>
 
-      <h2 className="display" style={{ fontSize: "1.6rem", color: "var(--pitch)", marginTop: 40, marginBottom: 16 }}>
-        COACH NOTES
-      </h2>
-      {player.progressNotes.length === 0 && <p style={{ opacity: 0.7 }}>No notes yet.</p>}
-      {player.progressNotes.map((note) => (
-        <div key={note.id} style={{ borderBottom: "1px solid #e3ded2", padding: "12px 0" }}>
-          <p>{note.note}</p>
-          <p style={{ fontSize: "0.8rem", opacity: 0.6 }}>
-            — {note.authorName}, {note.createdAt.toLocaleDateString()}
-          </p>
+      <h2 className="display" style={{ fontSize: "1.3rem", color: "var(--pitch)", margin: "32px 0 12px" }}>COACH NOTES</h2>
+      {notes.length === 0 ? (
+        <p style={{ opacity: 0.7 }}>No notes yet.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {notes.map((n) => (
+            <div key={n.id} style={cardStyle}>
+              <p style={{ margin: 0, lineHeight: 1.6 }}>{n.note}</p>
+              <p style={{ fontSize: "0.8rem", opacity: 0.6, margin: "8px 0 0" }}>
+                {n.authorName} &middot; {formatDate(n.createdAt)}
+              </p>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </ChildPageShell>
   );
 }

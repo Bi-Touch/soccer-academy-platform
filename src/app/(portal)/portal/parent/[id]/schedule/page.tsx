@@ -1,44 +1,74 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { playerName } from "@/lib/playerDisplay";
+import { requireOwnedChild } from "@/lib/parentAccess";
+import { ChildPageShell } from "@/components/parent/ChildPageShell";
+import { formatDateTime } from "@/lib/dates";
 
-export default async function ParentPlayerSchedulePage({ params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
+type EventItem = Awaited<ReturnType<typeof prisma.scheduleEvent.findMany>>[number];
 
-  const guardian = await prisma.parentGuardian.findUnique({ where: { userId: session.user.id } });
-  if (!guardian) return notFound();
+function EventCard({ e, muted = false }: { e: EventItem; muted?: boolean }) {
+  const hasScore = e.type === "MATCH" && e.homeScore !== null && e.awayScore !== null;
+  return (
+    <div
+      style={{
+        background: "white",
+        border: "1px solid #e3ded2",
+        borderLeft: "4px solid var(--floodlight)",
+        borderRadius: 8,
+        padding: 16,
+        opacity: muted ? 0.8 : 1,
+      }}
+    >
+      <div style={{ fontSize: "0.7rem", opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em" }}>{e.type}</div>
+      <div style={{ fontWeight: 600, marginTop: 2 }}>{e.title}</div>
+      <div style={{ fontSize: "0.85rem", opacity: 0.75, marginTop: 4 }}>
+        {formatDateTime(e.startsAt)}
+        {e.location ? ` · ${e.location}` : ""}
+      </div>
+      {hasScore && (
+        <div style={{ fontSize: "0.85rem", marginTop: 6, fontWeight: 600, color: "var(--pitch)" }}>
+          Result: {e.homeScore} – {e.awayScore}
+        </div>
+      )}
+    </div>
+  );
+}
 
-  const player = await prisma.player.findUnique({
-    where: { id: params.id },
-    include: { team: { include: { schedules: { orderBy: { startsAt: "asc" } } } } },
-  });
-  if (!player || player.parentGuardianId !== guardian.id) return notFound();
+export default async function ParentChildSchedulePage({ params }: { params: { id: string } }) {
+  const { player, child } = await requireOwnedChild(params.id);
+
+  const events = player.teamId
+    ? await prisma.scheduleEvent.findMany({ where: { teamId: player.teamId }, orderBy: { startsAt: "asc" } })
+    : [];
+
+  const now = new Date();
+  const upcoming = events.filter((e) => e.startsAt >= now);
+  const recent = events.filter((e) => e.startsAt < now).reverse().slice(0, 10);
 
   return (
-    <div>
-      <Link href="/portal/parent" style={{ fontSize: "0.9rem", opacity: 0.7 }}>&larr; My Children</Link>
-      <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)", marginTop: 12 }}>
-        {playerName(player).toUpperCase()} — SCHEDULE
-      </h1>
-
-      <div style={{ marginTop: 24 }}>
-        {(!player.team?.schedules || player.team.schedules.length === 0) && (
-          <p style={{ opacity: 0.7 }}>No events scheduled for this team yet.</p>
-        )}
-        {player.team?.schedules.map((event) => (
-          <div key={event.id} style={{ background: "white", borderLeft: "4px solid var(--floodlight)", padding: 16, marginBottom: 12 }}>
-            <div style={{ fontSize: "0.8rem", opacity: 0.6, textTransform: "uppercase" }}>{event.type}</div>
-            <strong>{event.title}</strong>
-            <div style={{ fontSize: "0.9rem", opacity: 0.75 }}>
-              {event.startsAt.toLocaleString()} {event.location ? `· ${event.location}` : ""}
+    <ChildPageShell child={child} active="schedule">
+      {!player.teamId ? (
+        <p style={{ opacity: 0.7 }}>Your child hasn't been assigned to a team yet, so there's no schedule to show.</p>
+      ) : (
+        <>
+          <h2 className="display" style={{ fontSize: "1.3rem", color: "var(--pitch)", marginBottom: 12 }}>UPCOMING</h2>
+          {upcoming.length === 0 ? (
+            <p style={{ opacity: 0.7 }}>Nothing scheduled yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {upcoming.map((e) => <EventCard key={e.id} e={e} />)}
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
+          )}
+
+          {recent.length > 0 && (
+            <>
+              <h2 className="display" style={{ fontSize: "1.3rem", color: "var(--pitch)", margin: "32px 0 12px" }}>RECENT</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {recent.map((e) => <EventCard key={e.id} e={e} muted />)}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </ChildPageShell>
   );
 }

@@ -393,6 +393,38 @@ body {
   background: #faf8f3;
 }
 
+/* Parent portal: child menu tiles */
+.child-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: #f4f3ef;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.child-tile:hover {
+  background: #ebe9e1;
+}
+.child-tile.active {
+  background: #e7f3ed;
+  border-color: var(--pitch);
+  color: var(--pitch);
+  font-weight: 600;
+}
+@media (max-width: 480px) {
+  .child-tile {
+    font-size: 0.8rem;
+    padding: 12px 4px;
+  }
+}
+
 @media print {
   .analytics-header,
   .analytics-filters,

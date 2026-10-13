@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -13,40 +15,50 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     setError("");
     setSubmitting(true);
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        rememberMe,
+      });
 
-    if (res?.error) {
-      setError("Incorrect email or password.");
+      if (!res || res.error) {
+        setError("Incorrect email or password.");
+        return;
+      }
+
+      const session = await getSession();
+      const role = session?.user?.role;
+
+      if (role === "ADMIN" || role === "COACH") {
+        router.push("/admin/players");
+      } else if (role === "PARENT") {
+        router.push("/portal/parent");
+      } else if (role === "ANALYST") {
+        router.push("/analytics");
+      } else {
+        router.push("/portal/dashboard");
+      }
+
+      router.refresh();
+    } catch {
+      setError("Unable to sign in. Please try again.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    const session = await getSession();
-    const role = (session?.user as any)?.role;
-    if (role === "ADMIN" || role === "COACH") {
-      router.push("/admin/players");
-    } else if (role === "PARENT") {
-      router.push("/portal/parent");
-    } else if (role === "ANALYST") {
-      router.push("/analytics");
-    }  else {
-      router.push("/portal/dashboard");
-    }
-    router.refresh();
   }
 
   const inputStyle: React.CSSProperties = {
     display: "block",
     width: "100%",
+    boxSizing: "border-box",
     padding: "11px 14px",
     marginTop: 6,
     border: "1px solid #d8d2c2",
@@ -64,8 +76,10 @@ export default function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         background: "var(--pitch)",
-        backgroundImage: "radial-gradient(circle at 30% 20%, rgba(232,163,61,0.08), transparent 55%)",
+        backgroundImage:
+          "radial-gradient(circle at 30% 20%, rgba(232,163,61,0.08), transparent 55%)",
         padding: 20,
+        boxSizing: "border-box",
       }}
     >
       <div
@@ -74,54 +88,99 @@ export default function LoginPage() {
           padding: "40px 36px",
           width: 380,
           maxWidth: "100%",
+          boxSizing: "border-box",
           borderRadius: 14,
           boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 28 }}>
+        {/* Academy logo and heading */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            marginBottom: 28,
+          }}
+        >
           <div
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: "50%",
-              background: "var(--pitch)",
-              color: "var(--floodlight)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontFamily: "'Big Shoulders Display', sans-serif",
-              fontWeight: 800,
-              fontSize: "1.3rem",
               marginBottom: 14,
             }}
           >
-            ⚽
+            <Image
+              src="/images/KO.png"
+              alt="KickOasis Academy Logo"
+              width={200}
+              height={80}
+              priority
+              style={{
+                width: "auto",
+                height: 80,
+                maxWidth: "100%",
+                objectFit: "contain",
+              }}
+            />
           </div>
-          <h1 className="display" style={{ fontSize: "1.8rem", color: "var(--pitch)" }}>
+
+          <h1
+            className="display"
+            style={{
+              fontSize: "1.8rem",
+              color: "var(--pitch)",
+              margin: 0,
+            }}
+          >
             SIGN IN
           </h1>
-          <p style={{ fontSize: "0.85rem", opacity: 0.6, marginTop: 4 }}>
-            KickOasis
-          </p>
         </div>
 
+        {/* Login form */}
         <form onSubmit={handleSubmit}>
-          <label style={{ display: "block", marginBottom: 16, fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: 16,
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              color: "var(--pitch)",
+            }}
+          >
             Email
+
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              disabled={submitting}
               style={inputStyle}
-              onFocus={(e) => (e.target.style.borderColor = "var(--floodlight)")}
-              onBlur={(e) => (e.target.style.borderColor = "#d8d2c2")}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "var(--floodlight)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 0 3px rgba(232,163,61,0.12)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "#d8d2c2";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             />
           </label>
 
-          <label style={{ display: "block", marginBottom: 8, fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: 8,
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              color: "var(--pitch)",
+            }}
+          >
             Password
+
             <div style={{ position: "relative" }}>
               <input
                 type={showPassword ? "text" : "password"}
@@ -129,14 +188,27 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                style={{ ...inputStyle, paddingRight: 44 }}
-                onFocus={(e) => (e.target.style.borderColor = "var(--floodlight)")}
-                onBlur={(e) => (e.target.style.borderColor = "#d8d2c2")}
+                disabled={submitting}
+                style={{
+                  ...inputStyle,
+                  paddingRight: 60,
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "var(--floodlight)";
+                  e.currentTarget.style.boxShadow =
+                    "0 0 0 3px rgba(232,163,61,0.12)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#d8d2c2";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               />
+
               <button
                 type="button"
-                onClick={() => setShowPassword((s) => !s)}
+                onClick={() => setShowPassword((current) => !current)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
                 style={{
                   position: "absolute",
                   right: 10,
@@ -147,7 +219,7 @@ export default function LoginPage() {
                   cursor: "pointer",
                   fontSize: "0.75rem",
                   color: "var(--pitch)",
-                  opacity: 0.6,
+                  opacity: 0.7,
                   padding: 4,
                 }}
               >
@@ -156,35 +228,104 @@ export default function LoginPage() {
             </div>
           </label>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, marginTop: 4 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", cursor: "pointer" }}>
+          {/* Remember me and password recovery */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
+              marginBottom: 20,
+              marginTop: 12,
+            }}
+          >
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                color: "var(--pitch)",
+              }}
+            >
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={submitting}
                 style={{ cursor: "pointer" }}
               />
+
               Remember me
             </label>
-            <a href="/forgot-password" style={{ fontSize: "0.8rem", color: "var(--pitch)", opacity: 0.75 }}>
+
+            <a
+              href="/forgot-password"
+              style={{
+                fontSize: "0.8rem",
+                color: "var(--pitch)",
+                opacity: 0.75,
+                textDecoration: "none",
+              }}
+            >
               Forgot password?
             </a>
           </div>
 
+          {/* Error message */}
           {error && (
-            <p style={{ color: "var(--card-red)", fontSize: "0.85rem", marginBottom: 14 }}>{error}</p>
+            <p
+              role="alert"
+              style={{
+                color: "var(--card-red)",
+                fontSize: "0.85rem",
+                marginTop: 0,
+                marginBottom: 14,
+              }}
+            >
+              {error}
+            </p>
           )}
 
-          <button type="submit" className="button" disabled={submitting} style={{ width: "100%" }}>
+          {/* Submit button */}
+          <button
+            type="submit"
+            className="button"
+            disabled={submitting}
+            style={{
+              width: "100%",
+              opacity: submitting ? 0.7 : 1,
+              cursor: submitting ? "not-allowed" : "pointer",
+            }}
+          >
             {submitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: 20, fontSize: "0.85rem" }}>
+        {/* Registration link */}
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: 20,
+            marginBottom: 0,
+            fontSize: "0.85rem",
+          }}
+        >
           New to the Academy?{" "}
-          <a href="/register/player" style={{ color: "var(--pitch)", fontWeight: 600 }}>Register your child</a>
-        </p>
 
+          <a
+            href="/register/player"
+            style={{
+              color: "var(--pitch)",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            Register your child
+          </a>
+        </p>
       </div>
     </div>
   );

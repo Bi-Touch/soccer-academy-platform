@@ -83,6 +83,10 @@ function ChildNavGroup({
             Reports
           </Link>
 
+          <Link href={`/portal/parent/${playerId}/videos`} style={subLinkStyle}>
+            Videos
+           </Link>
+
           <Link href={`/portal/parent/${playerId}/schedule`} style={subLinkStyle}>
             Schedule
           </Link>
