@@ -164,6 +164,38 @@ textarea {
   display: none;
 }
 
+/* Flat sidebar links (icon + label) */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+.nav-item-icon {
+  display: flex;
+  justify-content: center;
+  width: 24px;
+  flex-shrink: 0;
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+}
+.nav-item:hover .nav-item-icon {
+  opacity: 1;
+}
+
+/* Collapsed rail: show icons only (desktop only) */
+@media (min-width: 769px) {
+  .sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-item {
+    justify-content: center;
+  }
+  .sidebar-collapse-checkbox:checked ~ .admin-sidebar .nav-item-text {
+    display: none;
+  }
+}
+
 .sidebar-toggle-label {
   display: flex;
   align-items: center;
@@ -512,5 +544,11 @@ body {
   }
   .journey-mobile {
     display: block !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .sidebar-collapse-checkbox:checked ~ .admin-sidebar .sidebar-footer {
+    align-items: center;
   }
 }

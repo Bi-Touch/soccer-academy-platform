@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { UserMenu } from "@/components/UserMenu";
-import { MobileNavReset } from "@/components/MobileNavReset";
+import { NavAutoClose } from "@/components/NavAutoClose";
 
 const ROLE_LABEL: Record<string, string> = {
   PLAYER: "Player",
@@ -71,6 +71,8 @@ const ICONS = {
   barChart: <><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></>,
   image: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></>,
   shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+  book: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>,
+  arrowLeft: <><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></>,
 };
 
 function NavGroup({
@@ -107,6 +109,20 @@ function NavGroup({
   );
 }
 
+function FooterLink({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      title={label}
+      className="sidebar-footer-link"
+      style={{ ...navLinkStyle, display: "flex", alignItems: "center", gap: 10 }}
+    >
+      <Icon path={icon} />
+      <span className="sidebar-footer-link-text" style={{ opacity: 0.8 }}>{label}</span>
+    </Link>
+  );
+}
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
   const role = session?.user?.role;
@@ -114,67 +130,71 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
+      {/* These must stay direct siblings of the sidebar: the CSS reaches it with the ~ selector. */}
       <input type="checkbox" id="nav-toggle" className="nav-toggle-checkbox" />
-      <MobileNavReset/>  
-      
-        <label htmlFor="nav-toggle" className="nav-overlay" aria-hidden="true" />
+      <label htmlFor="nav-toggle" className="nav-overlay" aria-hidden="true" />
+      <input type="checkbox" id="sidebar-collapse" className="sidebar-collapse-checkbox" />
+      <NavAutoClose />
 
-        <input type="checkbox" id="sidebar-collapse" className="sidebar-collapse-checkbox" />
+      <aside className="admin-sidebar">
+        <label htmlFor="sidebar-collapse" className="sidebar-toggle-label" aria-label="Toggle sidebar width">
+          <SidebarToggleIcon />
+        </label>
 
-        <aside className="admin-sidebar">
-          <label htmlFor="sidebar-collapse" className="sidebar-toggle-label" aria-label="Toggle sidebar width">
-            <SidebarToggleIcon />
-          </label>
+        <div className="display sidebar-brand-text" style={{ fontSize: "1.4rem", marginBottom: 32 }}>STAFF</div>
 
-          <div className="display sidebar-brand-text" style={{ fontSize: "1.4rem", marginBottom: 32 }}>STAFF</div>
+        <nav style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          <NavGroup id="group-roster" label="Roster" icon={ICONS.users} firstHref={isAdmin ? "/admin/teams" : "/admin/players"}>
+            {isAdmin && <Link href="/admin/teams" style={navLinkStyle}>Teams</Link>}
+            {isAdmin && <Link href="/admin/coaches" style={navLinkStyle}>Coaches</Link>}
+            <Link href="/admin/players" style={navLinkStyle}>Players</Link>
+            <Link href="/admin/players/compare" style={navLinkStyle}>Compare Players</Link>
+          </NavGroup>
 
-          <nav style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-            <NavGroup id="group-roster" label="Roster" icon={ICONS.users} firstHref={isAdmin ? "/admin/teams" : "/admin/players"}>
-              {isAdmin && <Link href="/admin/teams" style={navLinkStyle}>Teams</Link>}
-              {isAdmin && <Link href="/admin/coaches" style={navLinkStyle}>Coaches</Link>}
-              <Link href="/admin/players" style={navLinkStyle}>Players</Link>
-              <Link href="/admin/players/compare" style={navLinkStyle}>Compare Players</Link>
+          <NavGroup id="group-operations" label="Operations" icon={ICONS.calendar} firstHref="/admin/schedule">
+            <Link href="/admin/schedule" style={navLinkStyle}>Schedule</Link>
+            <Link href="/admin/training" style={navLinkStyle}>Training Log</Link>
+            <Link href="/admin/assessments" style={navLinkStyle}>Assessments</Link>
+            <Link href="/admin/physical-tests" style={navLinkStyle}>Physical Tests</Link>
+            <Link href="/admin/matches" style={navLinkStyle}>Match Stats</Link>
+            <Link href="/admin/injuries" style={navLinkStyle}>Injuries</Link>
+          </NavGroup>
+
+          <NavGroup id="group-reports" label="Reports" icon={ICONS.barChart} firstHref="/admin/training/reports">
+            <Link href="/admin/training/reports" style={navLinkStyle}>Training Reports</Link>
+            <Link href="/admin/reports" style={navLinkStyle}>Team Reports</Link>
+            <Link href="/analytics" style={navLinkStyle}>Analytics Dashboard</Link>
+          </NavGroup>
+
+          <NavGroup id="group-content" label="Content" icon={ICONS.image} firstHref={isAdmin ? "/admin/news" : "/admin/videos"}>
+            {isAdmin && <Link href="/admin/news" style={navLinkStyle}>News</Link>}
+            <Link href="/admin/videos" style={navLinkStyle}>Videos</Link>
+            {isAdmin && <Link href="/admin/gallery" style={navLinkStyle}>Gallery</Link>}
+          </NavGroup>
+
+          {isAdmin && (
+            <NavGroup id="group-admin" label="Admin" icon={ICONS.shield} firstHref="/admin/registrations">
+              <Link href="/admin/registrations" style={navLinkStyle}>Registrations</Link>
+              <Link href="/admin/analysts" style={navLinkStyle}>Analysts</Link>
+              <Link href="/admin/enquiries" style={navLinkStyle}>Enquiries</Link>
             </NavGroup>
+          )}
 
-            <NavGroup id="group-operations" label="Operations" icon={ICONS.calendar} firstHref="/admin/schedule">
-              <Link href="/admin/schedule" style={navLinkStyle}>Schedule</Link>
-              <Link href="/admin/training" style={navLinkStyle}>Training Log</Link>
-              <Link href="/admin/assessments" style={navLinkStyle}>Assessments</Link>
-              <Link href="/admin/physical-tests" style={navLinkStyle}>Physical Tests</Link>
-              <Link href="/admin/matches" style={navLinkStyle}>Match Stats</Link>
-              <Link href="/admin/injuries" style={navLinkStyle}>Injuries</Link>
-            </NavGroup>
-
-            <NavGroup id="group-reports" label="Reports" icon={ICONS.barChart} firstHref="/admin/training/reports">
-              <Link href="/admin/training/reports" style={navLinkStyle}>Training Reports</Link>
-              <Link href="/admin/reports" style={navLinkStyle}>Team Reports</Link>
-              <Link href="/analytics" style={navLinkStyle}>Analytics Dashboard</Link>
-            </NavGroup>
-
-            <NavGroup id="group-content" label="Content" icon={ICONS.image} firstHref={isAdmin ? "/admin/news" : "/admin/videos"}>
-              {isAdmin && <Link href="/admin/news" style={navLinkStyle}>News</Link>}
-              <Link href="/admin/videos" style={navLinkStyle}>Videos</Link>
-              {isAdmin && <Link href="/admin/gallery" style={navLinkStyle}>Gallery</Link>}
-            </NavGroup>
-
-            {isAdmin && (
-              <NavGroup id="group-admin" label="Admin" icon={ICONS.shield} firstHref="/admin/registrations">
-                <Link href="/admin/registrations" style={navLinkStyle}>Registrations</Link>
-                <Link href="/admin/analysts" style={navLinkStyle}>Analysts</Link>
-                <Link href="/admin/enquiries" style={navLinkStyle}>Enquiries</Link>
-              </NavGroup>
-            )}
-
-            <div style={{ paddingTop: 8, borderTop: "1px solid rgba(245, 243, 238, 0.14)" }}>
-              <Link href="/admin/guide" className="sidebar-footer-link" style={{ ...navLinkStyle, opacity: 0.8, display: "block", marginBottom: 12 }}>
-                <span className="sidebar-footer-link-text">📖 Data Collection Guide</span>
-              </Link>
-              <Link href="/portal/dashboard" className="sidebar-footer-link" style={{ ...navLinkStyle, opacity: 0.8 }}>
-                <span className="sidebar-footer-link-text">&larr; Player Portal</span>
-              </Link>
-            </div>
-          </nav>
-        </aside>
+          <div
+            className="sidebar-footer"
+            style={{
+              paddingTop: 8,
+              borderTop: "1px solid rgba(245, 243, 238, 0.14)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+            }}
+          >
+            <FooterLink href="/admin/guide" label="Data Collection Guide" icon={ICONS.book} />
+            <FooterLink href="/portal/dashboard" label="Player Portal" icon={ICONS.arrowLeft} />
+          </div>
+        </nav>
+      </aside>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <header
