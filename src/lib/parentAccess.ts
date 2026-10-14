@@ -22,6 +22,7 @@ export async function requireOwnedChild(playerId: string) {
       name: playerName(player),
       photoUrl: player.photoUrl ?? null,
       teamName: player.team?.name ?? null,
+      position: player.position ?? null,
     },
   };
 }
