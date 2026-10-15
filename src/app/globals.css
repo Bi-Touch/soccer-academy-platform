@@ -355,6 +355,146 @@ textarea {
   transition: width 0.2s ease, padding 0.2s ease;
 }
 
+/* ========================================
+   SIDEBAR BRANDING AND COLLAPSE CONTROL
+   ======================================== */
+
+.admin-sidebar {
+  position: relative;
+}
+
+/* Sidebar header: academy logo, name and toggle */
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 28px;
+}
+
+/* Academy branding */
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  color: var(--chalk);
+  text-decoration: none;
+}
+
+.sidebar-brand-logo {
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  object-fit: contain;
+}
+
+.sidebar-brand-name {
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Circular sidebar toggle */
+
+.sidebar-toggle-label {
+  display: flex;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(245, 243, 238, 0.85);
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.sidebar-toggle-label:hover {
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+}
+
+.sidebar-toggle-label svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  transition: transform 150ms ease;
+}
+
+/* Expanded sidebar: chevron points left */
+
+.sidebar-collapse-checkbox:not(:checked)
+  ~ .admin-sidebar
+  .sidebar-toggle-label svg {
+  transform: rotate(0deg);
+}
+
+/* Collapsed sidebar: chevron points right */
+
+.sidebar-collapse-checkbox:checked
+  ~ .admin-sidebar
+  .sidebar-toggle-label svg {
+  transform: rotate(180deg);
+}
+
+/* Keyboard accessibility */
+
+.sidebar-toggle-label:focus-visible,
+.sidebar-brand:focus-visible {
+  outline: 2px solid var(--floodlight);
+  outline-offset: 4px;
+}
+
+/* Keep navigation groups compact */
+.admin-nav {
+  gap: 18px;
+}
+
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+}
+
+.nav-group-label-wrap {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.nav-group-label-wrap svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 150ms ease;
+}
+
+.nav-group-checkbox:checked
+  + .nav-group-header
+  .nav-group-label-wrap svg {
+  transform: rotate(90deg);
+}
+
 .nav-toggle-checkbox,
 .sidebar-collapse-checkbox,
 .nav-group-checkbox {
@@ -422,7 +562,7 @@ textarea {
   background: rgba(245, 243, 238, 0.08);
 }
 
-/* Collapsible nav groups (Roster, Operations, Reports, etc.) */
+/* Collapsible navigation groups */
 .nav-group-header {
   display: flex;
   align-items: center;
@@ -435,16 +575,27 @@ textarea {
   align-items: center;
   gap: 10px;
   flex: 1;
+  min-width: 0;
   cursor: pointer;
 }
 
 .nav-group-chevron {
-  margin-left: auto;
   flex-shrink: 0;
+  margin-left: auto;
   transition: transform 0.2s ease;
 }
 
-.nav-group-checkbox:checked + .nav-group-header .nav-group-chevron {
+/* Expanded menu: chevron points down */
+.nav-group-checkbox:not(:checked)
+  + .nav-group-header
+  .nav-group-chevron {
+  transform: rotate(0deg);
+}
+
+/* Collapsed menu: chevron points left */
+.nav-group-checkbox:checked
+  + .nav-group-header
+  .nav-group-chevron {
   transform: rotate(-90deg);
 }
 
@@ -454,8 +605,32 @@ textarea {
   transition: max-height 0.25s ease;
 }
 
-.nav-group-checkbox:checked + .nav-group-header + .nav-group-content {
+/* Checked means collapsed */
+.nav-group-checkbox:checked
+  + .nav-group-header
+  + .nav-group-content {
   max-height: 0;
+}
+
+/* Hidden checkbox remains keyboard-accessible through its label */
+.nav-group-checkbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.nav-group-checkbox:focus-visible
+  + .nav-group-header
+  .nav-group-label-wrap {
+  outline: 2px solid var(--floodlight);
+  outline-offset: 4px;
+  border-radius: 3px;
 }
 
 /* Collapsed rail mode (desktop width-toggle) */

@@ -53,8 +53,8 @@ function ChevronIcon() {
 function SidebarToggleIcon() {
   return (
     <svg
-      width="18"
-      height="18"
+      width="16"
+      height="16"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -63,8 +63,7 @@ function SidebarToggleIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <line x1="10" y1="4" x2="10" y2="20" />
+      <polyline points="14 18 8 12 14 6" />
     </svg>
   );
 }
@@ -130,6 +129,7 @@ function NavGroup({
         type="checkbox"
         id={id}
         className="nav-group-checkbox"
+        defaultChecked={id !== "group-operations"}
       />
 
       <div className="nav-group-header">
@@ -179,11 +179,7 @@ function FooterLink({
   icon: ReactNode;
 }) {
   return (
-    <Link
-      href={href}
-      title={label}
-      className="sidebar-footer-link"
-    >
+    <Link href={href} title={label} className="sidebar-footer-link">
       <Icon path={icon} />
       <span className="sidebar-footer-link-text">{label}</span>
     </Link>
@@ -201,7 +197,6 @@ export default async function AdminLayout({
 
   return (
     <div className="admin-shell">
-      {/* These controls must remain siblings of the sidebar. */}
       <input
         type="checkbox"
         id="nav-toggle"
@@ -223,18 +218,29 @@ export default async function AdminLayout({
       <NavAutoClose />
 
       <aside className="admin-sidebar">
-        <label
-          htmlFor="sidebar-collapse"
-          className="sidebar-toggle-label"
-          title="Collapse or expand sidebar"
-          aria-label="Toggle sidebar width"
-        >
-          <SidebarToggleIcon />
-        </label>
+        <div className="sidebar-top">
+          <Link
+            href="/admin"
+            className="sidebar-brand"
+            aria-label="KickOasis staff dashboard"
+          >
+            <img
+              src="/image/KO_U13_Crest_Transparent.png"
+              alt="KickOasis academy crest"
+              className="sidebar-brand-logo"
+            />
+            <span className="sidebar-brand-name">KICKOASIS</span>
+          </Link>
 
-        <Link href="/admin" className="display sidebar-brand-text" aria-label="KickOasis staff dashboard">
-          DASHBOARD
-        </Link>
+          <label
+            htmlFor="sidebar-collapse"
+            className="sidebar-toggle-label"
+            title="Collapse or expand sidebar"
+            aria-label="Toggle sidebar width"
+          >
+            <SidebarToggleIcon />
+          </label>
+        </div>
 
         <nav className="admin-nav" aria-label="Admin navigation">
           <NavGroup
