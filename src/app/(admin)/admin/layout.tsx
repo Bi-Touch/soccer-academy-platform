@@ -225,7 +225,7 @@ export default async function AdminLayout({
             aria-label="KickOasis staff dashboard"
           >
             <img
-              src="/image/KO_U13_Crest_Transparent.png"
+              src="/images/KO_U13_Crest_Transparent.png"
               alt="KickOasis academy crest"
               className="sidebar-brand-logo"
             />

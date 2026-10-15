@@ -404,8 +404,6 @@ textarea {
   white-space: nowrap;
 }
 
-/* Circular sidebar toggle */
-
 .sidebar-toggle-label {
   display: flex;
   flex: 0 0 32px;
@@ -416,19 +414,18 @@ textarea {
   min-height: 32px;
   margin: 0;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: rgba(245, 243, 238, 0.85);
   cursor: pointer;
-  transition:
-    background 150ms ease,
-    color 150ms ease;
+  opacity: 0.8;
 }
 
 .sidebar-toggle-label:hover {
-  background: rgba(255, 255, 255, 0.13);
-  color: #fff;
+  background: transparent;
+  color: var(--floodlight);
+  opacity: 1;
 }
 
 .sidebar-toggle-label svg {
@@ -460,6 +457,30 @@ textarea {
 .sidebar-brand:focus-visible {
   outline: 2px solid var(--floodlight);
   outline-offset: 4px;
+}
+
+/* Sidebar toggle: clean appearance without a hover box */
+.sidebar-toggle-label,
+.sidebar-toggle-label:hover,
+.sidebar-toggle-label:active {
+  border: none !important;
+  outline: none;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Keep a visible focus indicator for keyboard navigation */
+.sidebar-toggle-label:focus-visible {
+  outline: 2px solid var(--floodlight) !important;
+  outline-offset: 4px;
+  border-radius: 3px;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Smooth chevron rotation */
+.sidebar-toggle-label svg {
+  transition: transform 150ms ease;
 }
 
 /* Keep navigation groups compact */
