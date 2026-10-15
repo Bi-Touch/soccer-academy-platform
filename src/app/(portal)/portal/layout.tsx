@@ -152,9 +152,6 @@ export default async function PortalLayout({ children }: { children: React.React
             </>
           )}
 
-          {(role === "ADMIN" || role === "COACH") && (
-            <NavItem href="/admin/players" label="Staff Admin" icon={NAV_ICONS.arrowLeft} muted />
-          )}
         </nav>
       </aside>
 

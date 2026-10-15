@@ -72,7 +72,6 @@ const ICONS = {
   image: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></>,
   shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
   book: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>,
-  arrowLeft: <><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></>,
 };
 
 function NavGroup({
@@ -92,7 +91,7 @@ function NavGroup({
     <div>
       <input type="checkbox" id={id} className="nav-group-checkbox" />
       <div className="nav-group-header">
-        <Link href={firstHref} aria-label={`Go to ${label}`} style={{ display: "flex", color: "inherit" }}>
+        <Link href={firstHref} title={label} aria-label={`Go to ${label}`} style={{ display: "flex", color: "inherit" }}>
           <Icon path={icon} />
         </Link>
         <label htmlFor={id} className="nav-group-label-wrap">
@@ -137,7 +136,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <NavAutoClose />
 
       <aside className="admin-sidebar">
-        <label htmlFor="sidebar-collapse" className="sidebar-toggle-label" aria-label="Toggle sidebar width">
+        <label
+          htmlFor="sidebar-collapse"
+          className="sidebar-toggle-label"
+          title="Collapse / expand sidebar"
+          aria-label="Toggle sidebar width"
+        >
           <SidebarToggleIcon />
         </label>
 
@@ -191,7 +195,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             }}
           >
             <FooterLink href="/admin/guide" label="Data Collection Guide" icon={ICONS.book} />
-            <FooterLink href="/portal/dashboard" label="Player Portal" icon={ICONS.arrowLeft} />
           </div>
         </nav>
       </aside>

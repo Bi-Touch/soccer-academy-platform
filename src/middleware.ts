@@ -25,6 +25,11 @@ export default withAuth(
       return NextResponse.redirect(new URL(homeFor(role), req.url));
     }
 
+    // Staff have no player record, so the player/parent portal is not for them.
+    if (pathname.startsWith("/portal") && (role === "ADMIN" || role === "COACH")) {
+      return NextResponse.redirect(new URL("/admin/players", req.url));
+    }
+
     if (role === "ANALYST" && pathname.startsWith("/portal")) {
       return NextResponse.redirect(new URL("/analytics", req.url));
     }
