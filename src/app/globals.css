@@ -408,10 +408,12 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1 1 auto;
   min-width: 0;
   margin: 0;
   color: var(--chalk);
   text-decoration: none;
+  overflow: hidden;
 }
 
 .sidebar-brand-logo {
@@ -423,6 +425,7 @@ textarea {
 }
 
 .sidebar-brand-name {
+  min-width: 0;
   overflow: hidden;
   font-size: 1rem;
   font-weight: 700;
@@ -442,12 +445,40 @@ textarea {
   text-decoration: none;
 }
 
+/* Collapsed desktop sidebar: stack crest and toggle */
+@media (min-width: 769px) {
+  .sidebar-collapse-checkbox:checked
+    ~ .admin-sidebar
+    .sidebar-top {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-collapse-checkbox:checked
+    ~ .admin-sidebar
+    .sidebar-brand {
+    flex: 0 0 auto;
+    justify-content: center;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .sidebar-collapse-checkbox:checked
+    ~ .admin-sidebar
+    .sidebar-brand-name {
+    display: none;
+  }
+}
+
 /* =========================================================
    SHARED SIDEBAR COLLAPSE TOGGLE
    One implementation for every portal
    ========================================================= */
 
 .sidebar-toggle-label {
+  position: relative;
   display: flex;
   flex: 0 0 32px;
   align-items: center;
