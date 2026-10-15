@@ -38,7 +38,7 @@ export default function LoginPage() {
       const role = session?.user?.role;
 
       if (role === "ADMIN" || role === "COACH") {
-        router.push("/admin/players");
+        router.push("/admin");
       } else if (role === "PARENT") {
         router.push("/portal/parent");
       } else if (role === "ANALYST") {

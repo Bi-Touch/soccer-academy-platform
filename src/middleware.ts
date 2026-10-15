@@ -1,14 +1,28 @@
+
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
-const ADMIN_ONLY_PREFIXES = ["/admin/teams", "/admin/coaches", "/admin/news", "/admin/enquiries", "/admin/gallery"];
+const ADMIN_ONLY_PREFIXES = [
+  "/admin/teams",
+  "/admin/coaches",
+  "/admin/news",
+  "/admin/enquiries",
+  "/admin/gallery",
+];
 
-const PLAYER_ONLY_PORTAL_PREFIXES = ["/portal/dashboard", "/portal/profile", "/portal/schedule", "/portal/videos", "/portal/leaderboard"];
+const PLAYER_ONLY_PORTAL_PREFIXES = [
+  "/portal/dashboard",
+  "/portal/profile",
+  "/portal/schedule",
+  "/portal/videos",
+  "/portal/leaderboard",
+];
 
 function homeFor(role: string | undefined) {
   if (role === "ANALYST") return "/analytics";
   if (role === "PARENT") return "/portal/parent";
-  if (role === "ADMIN" || role === "COACH") return "/admin/players";
+  if (role === "ADMIN" || role === "COACH") return "/admin";
+
   return "/portal/dashboard";
 }
 
@@ -17,29 +31,72 @@ export default withAuth(
     const { pathname } = req.nextUrl;
     const role = req.nextauth.token?.role as string | undefined;
 
-    if (pathname.startsWith("/admin") && role !== "ADMIN" && role !== "COACH") {
-      return NextResponse.redirect(new URL(homeFor(role), req.url));
+    // Only administrators and coaches can access the admin area.
+    if (
+      pathname.startsWith("/admin") &&
+      role !== "ADMIN" &&
+      role !== "COACH"
+    ) {
+      return NextResponse.redirect(
+        new URL(homeFor(role), req.url)
+      );
     }
 
-    if (pathname.startsWith("/analytics") && role !== "ADMIN" && role !== "COACH" && role !== "ANALYST") {
-      return NextResponse.redirect(new URL(homeFor(role), req.url));
+    // Only administrators, coaches, and analysts can access analytics.
+    if (
+      pathname.startsWith("/analytics") &&
+      role !== "ADMIN" &&
+      role !== "COACH" &&
+      role !== "ANALYST"
+    ) {
+      return NextResponse.redirect(
+        new URL(homeFor(role), req.url)
+      );
     }
 
-    // Staff have no player record, so the player/parent portal is not for them.
-    if (pathname.startsWith("/portal") && (role === "ADMIN" || role === "COACH")) {
-      return NextResponse.redirect(new URL("/admin/players", req.url));
+    // Staff members should be redirected to the admin dashboard
+    // instead of accessing the player/parent portal.
+    if (
+      pathname.startsWith("/portal") &&
+      (role === "ADMIN" || role === "COACH")
+    ) {
+      return NextResponse.redirect(
+        new URL("/admin", req.url)
+      );
     }
 
-    if (role === "ANALYST" && pathname.startsWith("/portal")) {
-      return NextResponse.redirect(new URL("/analytics", req.url));
+    // Analysts should use the analytics area, not the portal.
+    if (
+      role === "ANALYST" &&
+      pathname.startsWith("/portal")
+    ) {
+      return NextResponse.redirect(
+        new URL("/analytics", req.url)
+      );
     }
 
-    if (role === "COACH" && ADMIN_ONLY_PREFIXES.some((p) => pathname.startsWith(p))) {
-      return NextResponse.redirect(new URL("/admin/players", req.url));
+    // Coaches cannot access administrator-only sections.
+    if (
+      role === "COACH" &&
+      ADMIN_ONLY_PREFIXES.some((prefix) =>
+        pathname.startsWith(prefix)
+      )
+    ) {
+      return NextResponse.redirect(
+        new URL("/admin", req.url)
+      );
     }
 
-    if (role === "PARENT" && PLAYER_ONLY_PORTAL_PREFIXES.some((p) => pathname.startsWith(p))) {
-      return NextResponse.redirect(new URL("/portal/parent", req.url));
+    // Parents cannot access player-only portal sections.
+    if (
+      role === "PARENT" &&
+      PLAYER_ONLY_PORTAL_PREFIXES.some((prefix) =>
+        pathname.startsWith(prefix)
+      )
+    ) {
+      return NextResponse.redirect(
+        new URL("/portal/parent", req.url)
+      );
     }
 
     return NextResponse.next();
@@ -52,5 +109,9 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/portal/:path*", "/admin/:path*", "/analytics/:path*"],
+  matcher: [
+    "/portal/:path*",
+    "/admin/:path*",
+    "/analytics/:path*",
+  ],
 };
