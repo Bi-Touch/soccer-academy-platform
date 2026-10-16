@@ -7,6 +7,7 @@ import { parseCsv } from "@/lib/csv";
 import type { ImportResult } from "@/lib/importResult";
 import { ASSESSMENT_ATTRIBUTES } from "@/lib/assessmentAttributes";
 import { playerName } from "@/lib/playerDisplay";
+import { logAudit } from "@/lib/audit";
 
 const ATTRIBUTE_TO_DOMAIN = new Map<string, "TECHNICAL" | "TACTICAL" | "PHYSICAL" | "MENTAL">();
 for (const [domain, attrs] of Object.entries(ASSESSMENT_ATTRIBUTES) as [
@@ -39,6 +40,7 @@ export async function importAssessments(formData: FormData): Promise<ImportResul
   );
 
   const result: ImportResult = { createdCount: 0, updatedCount: 0, errors: [] };
+  const assessedPlayerIds = new Set<string>();
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -92,10 +94,25 @@ export async function importAssessments(formData: FormData): Promise<ImportResul
         },
       });
       result.createdCount++;
+      assessedPlayerIds.add(player.id);
     } catch {
       result.errors.push({ row: rowNum, message: "Failed to create assessment." });
     }
   }
+
+  // One entry per import, not per row. Summary and goals text are not copied into the log.
+  await logAudit({
+    action: "assessment.import",
+    entityType: "DevelopmentAssessment",
+    summary: `Imported assessments from ${file.name}: ${result.createdCount} created, ${result.errors.length} rows rejected`,
+    changes: {
+      fileName: file.name,
+      rowsInFile: rows.length,
+      createdCount: result.createdCount,
+      errorCount: result.errors.length,
+      playersAssessed: assessedPlayerIds.size,
+    },
+  });
 
   revalidatePath("/admin/assessments");
   return result;
