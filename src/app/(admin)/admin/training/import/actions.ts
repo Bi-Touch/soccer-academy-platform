@@ -6,6 +6,7 @@ import { requireStaff, getAccessibleTeamIds } from "@/lib/permissions";
 import { parseCsv } from "@/lib/csv";
 import type { ImportResult } from "@/lib/importResult";
 import type { AttendanceStatus } from "@prisma/client";
+import { logAudit } from "@/lib/audit";
 
 const VALID_STATUSES = ["PRESENT", "LATE", "ABSENT_EXCUSED", "ABSENT_UNEXCUSED", "INJURED"];
 
@@ -29,6 +30,7 @@ export async function importTrainingLog(formData: FormData): Promise<ImportResul
 
   const result: ImportResult = { createdCount: 0, updatedCount: 0, errors: [] };
   const staffUser = await prisma.user.findUnique({ where: { id: user.id } });
+  let sessionsCreated = 0;
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -56,6 +58,14 @@ export async function importTrainingLog(formData: FormData): Promise<ImportResul
       continue;
     }
 
+    // Validate the player before touching the schedule, so a rejected row never leaves an empty session behind.
+    const email = (row.playerEmail || "").trim().toLowerCase();
+    const player = team.players.find((p) => p.user?.email?.trim().toLowerCase() === email);
+    if (!player) {
+      result.errors.push({ row: rowNum, message: `Player with email "${email}" not found on team "${team.name}".` });
+      continue;
+    }
+
     let event = await prisma.scheduleEvent.findFirst({
       where: {
         teamId: team.id,
@@ -74,13 +84,7 @@ export async function importTrainingLog(formData: FormData): Promise<ImportResul
       event = await prisma.scheduleEvent.create({
         data: { teamId: team.id, type: "TRAINING", title, startsAt },
       });
-    }
-
-    const email = (row.playerEmail || "").trim().toLowerCase();
-    const player = team.players.find((p) => p.user?.email?.trim().toLowerCase() === email);
-    if (!player) {
-      result.errors.push({ row: rowNum, message: `Player with email "${email}" not found on team "${team.name}".` });
-      continue;
+      sessionsCreated++;
     }
 
     const statusRaw = (row.status || "PRESENT").trim().toUpperCase();
@@ -107,6 +111,21 @@ export async function importTrainingLog(formData: FormData): Promise<ImportResul
     if (existing) result.updatedCount++;
     else result.createdCount++;
   }
+
+  // One entry per import, not per row. Coaching notes from the CSV are not copied into the log.
+  await logAudit({
+    action: "training.import",
+    entityType: "TrainingAttendance",
+    summary: `Imported training log from ${file.name}: ${result.createdCount} created, ${result.updatedCount} updated, ${result.errors.length} rows rejected`,
+    changes: {
+      fileName: file.name,
+      rowsInFile: rows.length,
+      createdCount: result.createdCount,
+      updatedCount: result.updatedCount,
+      errorCount: result.errors.length,
+      sessionsCreated,
+    },
+  });
 
   revalidatePath("/admin/training");
   return result;
