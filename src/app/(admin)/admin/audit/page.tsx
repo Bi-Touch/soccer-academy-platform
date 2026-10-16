@@ -4,7 +4,8 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/permissions";
 
-const PAGE_SIZE = 50;
+const SIZE_OPTIONS = [20, 50, 100];
+const DEFAULT_SIZE = 50;
 
 const cardStyle: React.CSSProperties = {
   background: "#fff",
@@ -12,7 +13,26 @@ const cardStyle: React.CSSProperties = {
   borderRadius: 8,
 };
 
-type SearchParams = { q?: string; action?: string; from?: string; to?: string; page?: string };
+const thStyle: React.CSSProperties = {
+  position: "sticky",
+  top: 0,
+  zIndex: 1,
+  background: "#fff",
+  borderBottom: "2px solid var(--ink)",
+  textAlign: "left",
+  fontSize: "0.85rem",
+  padding: "12px 8px",
+  whiteSpace: "nowrap",
+};
+
+const tdStyle: React.CSSProperties = {
+  borderBottom: "1px solid #e3ded2",
+  fontSize: "0.85rem",
+  verticalAlign: "top",
+  padding: "10px 8px",
+};
+
+type SearchParams = { q?: string; action?: string; from?: string; to?: string; page?: string; size?: string };
 
 const ACTION_FILTERS = [
   { value: "", label: "All actions" },
@@ -34,6 +54,8 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Sea
   const user = await getSessionUser();
   if (!user || user.role !== "ADMIN") redirect("/admin");
 
+  const requestedSize = parseInt(searchParams.size ?? "", 10);
+  const pageSize = SIZE_OPTIONS.includes(requestedSize) ? requestedSize : DEFAULT_SIZE;
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
   const q = searchParams.q?.trim();
 
@@ -54,21 +76,24 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Sea
     prisma.auditLog.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: PAGE_SIZE,
-      skip: (page - 1) * PAGE_SIZE,
+      take: pageSize,
+      skip: (page - 1) * pageSize,
     }),
     prisma.auditLog.count({ where }),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const firstShown = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastShown = Math.min(page * pageSize, total);
 
-  function pageHref(p: number) {
+  function href(overrides: { page?: number; size?: number }) {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (searchParams.action) params.set("action", searchParams.action);
     if (searchParams.from) params.set("from", searchParams.from);
     if (searchParams.to) params.set("to", searchParams.to);
-    params.set("page", String(p));
+    params.set("size", String(overrides.size ?? pageSize));
+    params.set("page", String(overrides.page ?? 1));
     return `/admin/audit?${params.toString()}`;
   }
 
@@ -82,6 +107,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Sea
       </p>
 
       <form method="GET" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", marginTop: 20 }}>
+        <input type="hidden" name="size" value={pageSize} />
         <label style={{ fontSize: "0.8rem" }}>
           Search
           <input name="q" defaultValue={q ?? ""} placeholder="Name, summary or record id" style={{ ...inputStyle, minWidth: 220 }} />
@@ -106,33 +132,51 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Sea
         <Link href="/admin/audit" className="button outline">Reset</Link>
       </form>
 
-      <p style={{ marginTop: 20, fontSize: "0.85rem", opacity: 0.7 }}>
-        {total} entr{total === 1 ? "y" : "ies"}
-      </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 20 }}>
+        <p style={{ fontSize: "0.85rem", opacity: 0.7 }}>
+          {total === 0 ? "No entries" : `Showing ${firstShown}–${lastShown} of ${total}`}
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem" }}>
+          <span style={{ opacity: 0.7 }}>Show</span>
+          {SIZE_OPTIONS.map((n) => (
+            <Link
+              key={n}
+              href={href({ size: n, page: 1 })}
+              style={{
+                textDecoration: n === pageSize ? "none" : "underline",
+                fontWeight: n === pageSize ? 700 : 400,
+                color: n === pageSize ? "var(--pitch)" : "inherit",
+              }}
+            >
+              {n}
+            </Link>
+          ))}
+        </div>
+      </div>
 
-      <div style={{ ...cardStyle, marginTop: 8, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+      <div style={{ ...cardStyle, marginTop: 8, overflow: "auto", maxHeight: "65vh" }}>
+        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 900 }}>
           <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid var(--ink)", fontSize: "0.85rem" }}>
-              <th style={{ padding: "12px 16px" }}>When</th>
-              <th style={{ padding: "12px 8px" }}>Who</th>
-              <th style={{ padding: "12px 8px" }}>Action</th>
-              <th style={{ padding: "12px 8px" }}>Summary</th>
-              <th style={{ padding: "12px 16px" }}>IP</th>
+            <tr>
+              <th style={{ ...thStyle, padding: "12px 8px 12px 16px" }}>When</th>
+              <th style={thStyle}>Who</th>
+              <th style={thStyle}>Action</th>
+              <th style={thStyle}>Summary</th>
+              <th style={{ ...thStyle, padding: "12px 16px 12px 8px" }}>IP</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} style={{ borderBottom: "1px solid #e3ded2", fontSize: "0.85rem", verticalAlign: "top" }}>
-                <td style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
+              <tr key={r.id}>
+                <td style={{ ...tdStyle, padding: "10px 8px 10px 16px", whiteSpace: "nowrap" }}>
                   {r.createdAt.toLocaleString("en-GB", { timeZone: "Africa/Nairobi", dateStyle: "medium", timeStyle: "medium" })}
                 </td>
-                <td style={{ padding: "10px 8px" }}>
+                <td style={tdStyle}>
                   {r.actorName ?? "—"}
                   {r.actorRole && <div style={{ opacity: 0.55, fontSize: "0.75rem" }}>{r.actorRole}</div>}
                 </td>
-                <td style={{ padding: "10px 8px", whiteSpace: "nowrap" }}>{r.action}</td>
-                <td style={{ padding: "10px 8px" }}>
+                <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{r.action}</td>
+                <td style={tdStyle}>
                   {r.summary ?? "—"}
                   {r.entityType && (
                     <div style={{ opacity: 0.55, fontSize: "0.75rem" }}>
@@ -148,7 +192,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Sea
                     </details>
                   )}
                 </td>
-                <td style={{ padding: "10px 16px", whiteSpace: "nowrap", opacity: 0.7 }}>{r.ip ?? "—"}</td>
+                <td style={{ ...tdStyle, padding: "10px 16px 10px 8px", whiteSpace: "nowrap", opacity: 0.7 }}>{r.ip ?? "—"}</td>
               </tr>
             ))}
             {rows.length === 0 && (
@@ -162,9 +206,9 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Sea
 
       {totalPages > 1 && (
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 16, fontSize: "0.9rem" }}>
-          {page > 1 && <Link href={pageHref(page - 1)} className="button outline sm">&larr; Newer</Link>}
+          {page > 1 && <Link href={href({ page: page - 1 })} className="button outline sm">&larr; Newer</Link>}
           <span style={{ opacity: 0.7 }}>Page {page} of {totalPages}</span>
-          {page < totalPages && <Link href={pageHref(page + 1)} className="button outline sm">Older &rarr;</Link>}
+          {page < totalPages && <Link href={href({ page: page + 1 })} className="button outline sm">Older &rarr;</Link>}
         </div>
       )}
     </div>
