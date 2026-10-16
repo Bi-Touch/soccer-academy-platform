@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/permissions";
 import { sendRegistrationApprovedEmail, sendPlayerAddedEmail } from "@/lib/notifications";
+import { logAudit, diffFields } from "@/lib/audit";
 
 function generateTempPassword() {
   return crypto.randomBytes(6).toString("base64").replace(/[+/=]/g, "").slice(0, 10);
@@ -28,7 +29,7 @@ export async function approveRegistration(registrationId: string) {
   let tempPassword: string | null = null;
   let guardianUserId = guardian.userId;
 
-  await prisma.$transaction(async (tx) => {
+  const createdPlayerId = await prisma.$transaction(async (tx) => {
     if (!guardianUserId) {
       // First approval for this guardian — check the email isn't already
       // in use by an unrelated account before creating a login.
@@ -60,6 +61,21 @@ export async function approveRegistration(registrationId: string) {
       where: { id: registration.id },
       data: { status: "APPROVED", reviewedAt: new Date(), createdPlayerId: player.id },
     });
+
+    return player.id;
+  });
+
+  // The temporary password is deliberately never logged.
+  await logAudit({
+    action: "registration.approve",
+    entityType: "PlayerRegistration",
+    entityId: registration.id,
+    summary: `Approved registration for ${playerFullName}`,
+    changes: {
+      ...diffFields({ status: registration.status }, { status: "APPROVED" }),
+      createdPlayerId,
+      guardianLoginCreated: !guardian.userId,
+    },
   });
 
   try {
@@ -84,9 +100,24 @@ export async function rejectRegistration(registrationId: string, formData: FormD
   await requireAdmin();
   const reviewNotes = String(formData.get("reviewNotes") || "").trim() || null;
 
+  const before = await prisma.playerRegistration.findUnique({ where: { id: registrationId } });
+  if (!before) throw new Error("Registration not found.");
+
   await prisma.playerRegistration.update({
     where: { id: registrationId },
     data: { status: "REJECTED", reviewedAt: new Date(), reviewNotes },
+  });
+
+  // Review notes are free text about a child and family, so only whether notes were added is logged.
+  await logAudit({
+    action: "registration.reject",
+    entityType: "PlayerRegistration",
+    entityId: registrationId,
+    summary: `Rejected registration for ${before.firstName} ${before.lastName}`,
+    changes: {
+      ...diffFields({ status: before.status }, { status: "REJECTED" }),
+      hasReviewNotes: Boolean(reviewNotes),
+    },
   });
 
   revalidatePath("/admin/registrations");
@@ -97,9 +128,23 @@ export async function requestChanges(registrationId: string, formData: FormData)
   await requireAdmin();
   const reviewNotes = String(formData.get("reviewNotes") || "").trim() || null;
 
+  const before = await prisma.playerRegistration.findUnique({ where: { id: registrationId } });
+  if (!before) throw new Error("Registration not found.");
+
   await prisma.playerRegistration.update({
     where: { id: registrationId },
     data: { status: "CHANGES_REQUESTED", reviewedAt: new Date(), reviewNotes },
+  });
+
+  await logAudit({
+    action: "registration.changesRequested",
+    entityType: "PlayerRegistration",
+    entityId: registrationId,
+    summary: `Requested changes to registration for ${before.firstName} ${before.lastName}`,
+    changes: {
+      ...diffFields({ status: before.status }, { status: "CHANGES_REQUESTED" }),
+      hasReviewNotes: Boolean(reviewNotes),
+    },
   });
 
   revalidatePath("/admin/registrations");
@@ -123,6 +168,15 @@ export async function resetGuardianPassword(guardianId: string) {
     });
     await prisma.parentGuardian.update({ where: { id: guardian.id }, data: { userId: user.id } });
   }
+
+  // The new password and hash are deliberately never logged, only the fact of the reset.
+  await logAudit({
+    action: "guardian.password.reset",
+    entityType: "ParentGuardian",
+    entityId: guardianId,
+    summary: `Reset the login password for guardian ${guardian.firstName} ${guardian.lastName}`,
+    changes: { email: guardian.email, loginCreated: !guardian.userId },
+  });
 
   redirect(`/admin/registrations?resetGuardianEmail=${encodeURIComponent(guardian.email)}&tempPassword=${encodeURIComponent(tempPassword)}`);
 }
