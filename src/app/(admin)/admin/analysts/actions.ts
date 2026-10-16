@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/permissions";
+import { logAudit, diffFields } from "@/lib/audit";
 
 export async function createAnalyst(formData: FormData) {
   await requireAdmin();
@@ -20,7 +21,16 @@ export async function createAnalyst(formData: FormData) {
   if (existing) throw new Error("A user with that email already exists.");
 
   const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.create({ data: { name, email, passwordHash, role: "ANALYST" } });
+  const created = await prisma.user.create({ data: { name, email, passwordHash, role: "ANALYST" } });
+
+  // The password and hash are deliberately never logged.
+  await logAudit({
+    action: "analyst.create",
+    entityType: "User",
+    entityId: created.id,
+    summary: `Created analyst account for ${name}`,
+    changes: diffFields(null, { name, email, role: "ANALYST" }),
+  });
 
   revalidatePath("/admin/analysts");
   redirect("/admin/analysts");
@@ -34,5 +44,18 @@ export async function deleteAnalyst(userId: string) {
   if (!user || user.role !== "ANALYST") return;
 
   await prisma.user.delete({ where: { id: userId } });
+
+  // Logged after the delete succeeds, using the details captured before it.
+  await logAudit({
+    action: "analyst.delete",
+    entityType: "User",
+    entityId: userId,
+    summary: `Deleted analyst account for ${user.name}`,
+    changes: diffFields(
+      { name: user.name, email: user.email, role: user.role },
+      { name: null, email: null, role: null }
+    ),
+  });
+
   revalidatePath("/admin/analysts");
 }
