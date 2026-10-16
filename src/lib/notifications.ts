@@ -170,3 +170,15 @@ export async function sendPasswordResetEmail(to: string, name: string, resetUrl:
      <p>If you didn't request this, you can safely ignore this email.</p>`
   );
 }
+
+export async function sendPlayerLoginEmail(to: string, name: string, loginEmail: string, tempPassword: string) {
+  await sendEmail(
+    to,
+    "Your Academy portal login",
+    `<p>Hi ${name},</p>
+     <p>Your Academy portal account is ready.</p>
+     <p><strong>Email:</strong> ${loginEmail}<br/><strong>Temporary password:</strong> ${tempPassword}</p>
+     <p>Please sign in and change your password. If you forget it, use "Forgot password?" on the sign-in page.</p>
+     <p><a href="${process.env.NEXTAUTH_URL || ""}/login">Sign in</a></p>`
+  );
+}

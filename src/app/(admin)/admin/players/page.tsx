@@ -49,11 +49,17 @@ export default async function AdminPlayersPage() {
             <span style={tagStyle}>{p.team?.name ?? "No team"}</span>
             {p.position && <span style={tagStyle}>{p.position}</span>}
             {p.shirtNumber != null && <span style={tagStyle}>#{p.shirtNumber}</span>}
+            {!p.userId && <span style={{ ...tagStyle, opacity: 0.7 }}>No portal login</span>}
           </div>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
           <Link href={`/admin/players/${p.id}/edit`} style={actionLinkStyle}>Edit</Link>
           <Link href={`/admin/players/${p.id}/reports`} style={actionLinkStyle}>Reports</Link>
+          {user?.role === "ADMIN" && (
+            <Link href={`/admin/players/${p.id}/login`} style={actionLinkStyle}>
+              {p.userId ? "Login" : "Create login"}
+            </Link>
+          )}  
           <form action={deletePlayer.bind(null, p.id)}>
             <button type="submit" style={{ background: "none", border: "none", color: "var(--card-red)", cursor: "pointer", fontSize: "0.9rem", padding: 0 }}>
               Remove
