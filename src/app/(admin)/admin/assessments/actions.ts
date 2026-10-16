@@ -5,6 +5,7 @@ import { requireStaff, getAccessibleTeamIds } from "@/lib/permissions";
 import { toCsv } from "@/lib/csv";
 import { ASSESSMENT_ATTRIBUTES } from "@/lib/assessmentAttributes";
 import { playerName } from "@/lib/playerDisplay";
+import { logAudit } from "@/lib/audit";
 
 export async function exportAssessments(): Promise<string> {
   const user = await requireStaff();
@@ -30,6 +31,14 @@ export async function exportAssessments(): Promise<string> {
       a.nextGoals ?? "",
       ...attrNames.map((attr) => byAttr.get(attr) ?? ""),
     ];
+  });
+
+  // The export contains player names and emails, so it is worth a record of who took it.
+  await logAudit({
+    action: "assessment.export",
+    entityType: "DevelopmentAssessment",
+    summary: `Exported ${assessments.length} assessments to CSV`,
+    changes: { rowCount: assessments.length, scopedToTeams: accessibleTeamIds ? accessibleTeamIds.length : "all" },
   });
 
   return toCsv(headers, rows);
