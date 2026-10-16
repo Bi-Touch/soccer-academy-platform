@@ -8,6 +8,7 @@ import type { ImportResult } from "@/lib/importResult";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
 import { ageGroupForDate, findBenchmark, scoreResult } from "@/lib/benchmarkScoring";
 import { playerName } from "@/lib/playerDisplay";
+import { logAudit } from "@/lib/audit";
 
 export async function importPhysicalTests(formData: FormData): Promise<ImportResult> {
   const user = await requireStaff();
@@ -36,6 +37,8 @@ export async function importPhysicalTests(formData: FormData): Promise<ImportRes
   const teamByName = new Map(teams.map((t) => [t.name.trim().toLowerCase(), t]));
 
   const result: ImportResult = { createdCount: 0, updatedCount: 0, errors: [] };
+  const testedPlayerIds = new Set<string>();
+  let resultsWritten = 0;
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -186,6 +189,8 @@ export async function importPhysicalTests(formData: FormData): Promise<ImportRes
 
       if (existed) result.updatedCount++;
       else result.createdCount++;
+      testedPlayerIds.add(player.id);
+      resultsWritten += values.length;
 
       revalidatePath(`/admin/players/${player.id}/reports`);
     } catch (error) {
@@ -193,6 +198,22 @@ export async function importPhysicalTests(formData: FormData): Promise<ImportRes
       result.errors.push({ row: rowNum, message: "Failed to create or update physical test." });
     }
   }
+
+  // One entry per import, not per row. Individual test values are not copied into the log.
+  await logAudit({
+    action: "physicalTest.import",
+    entityType: "PhysicalTest",
+    summary: `Imported physical tests from ${file.name}: ${result.createdCount} created, ${result.updatedCount} updated, ${result.errors.length} rows rejected`,
+    changes: {
+      fileName: file.name,
+      rowsInFile: rows.length,
+      createdCount: result.createdCount,
+      updatedCount: result.updatedCount,
+      errorCount: result.errors.length,
+      playersTested: testedPlayerIds.size,
+      resultsWritten,
+    },
+  });
 
   revalidatePath("/admin/physical-tests");
   revalidatePath("/admin/reports");
