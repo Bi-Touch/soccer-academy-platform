@@ -1,8 +1,19 @@
 import type { CSSProperties, ReactNode } from "react";
 
-export function Icon({ children, size = 16, style }: { children: ReactNode; size?: number; style?: CSSProperties }) {
+export function Icon({
+  children,
+  size = 16,
+  style,
+  className,
+}: {
+  children: ReactNode;
+  size?: number;
+  style?: CSSProperties;
+  className?: string;
+}) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -39,9 +50,23 @@ export function ChevronIcon() {
   );
 }
 
+/*
+  Points right (>) by default. globals.css rotates it 180deg while the
+  sidebar is expanded (<) and leaves it unrotated while collapsed (>).
+*/
 export function SidebarToggleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polyline points="9 18 15 12 9 6" />
     </svg>
   );
@@ -108,6 +133,27 @@ export const NAV_ICONS = {
     <>
       <line x1="19" y1="12" x2="5" y2="12" />
       <polyline points="12 19 5 12 12 5" />
+    </>
+  ),
+  barChart: (
+    <>
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </>
+  ),
+  shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+  book: (
+    <>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
     </>
   ),
 };
