@@ -8,6 +8,7 @@ import { playerName } from "@/lib/playerDisplay";
 import { generateTempPassword } from "@/lib/tempPassword";
 import { sendPlayerLoginEmail } from "@/lib/notifications";
 import type { PlayerLoginResult } from "@/lib/playerLoginTypes";
+import { logAudit, diffFields } from "@/lib/audit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -35,16 +36,27 @@ export async function createPlayerLogin(playerId: string, formData: FormData): P
   const passwordHash = await bcrypt.hash(tempPassword, 10);
   const name = playerName(player);
 
+  let userId: string;
   try {
     // Both writes succeed together or neither does, so we never leave an orphan login.
-    await prisma.$transaction(async (tx) => {
+    userId = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({ data: { email, name, passwordHash, role: "PLAYER" } });
       await tx.player.update({ where: { id: playerId }, data: { userId: user.id } });
+      return user.id;
     });
   } catch (e) {
     console.error("createPlayerLogin failed:", e);
     return { ok: false, error: "Could not create the login. Please try again." };
   }
+
+  // The temporary password is deliberately never logged.
+  await logAudit({
+    action: "player.login.create",
+    entityType: "Player",
+    entityId: playerId,
+    summary: `Created a login for ${name}`,
+    changes: diffFields(null, { email, userId, emailRequested: sendToPlayer }),
+  });
 
   if (sendToPlayer) {
     try {
@@ -71,6 +83,15 @@ export async function resetPlayerLoginPassword(playerId: string, formData: FormD
   const passwordHash = await bcrypt.hash(tempPassword, 10);
 
   await prisma.user.update({ where: { id: player.user.id }, data: { passwordHash } });
+
+  // The new password and hash are deliberately never logged, only the fact of the reset.
+  await logAudit({
+    action: "player.login.reset",
+    entityType: "Player",
+    entityId: playerId,
+    summary: `Reset the login password for ${playerName(player)}`,
+    changes: { email: player.user.email, emailRequested: sendToPlayer },
+  });
 
   if (sendToPlayer) {
     try {
