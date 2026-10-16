@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireStaff, getAccessibleTeamIds, assertTeamAccess } from "@/lib/permissions";
+import { logAudit, diffFields } from "@/lib/audit";
 
 export async function createVideo(formData: FormData) {
   const user = await requireStaff();
@@ -34,7 +35,7 @@ export async function createVideo(formData: FormData) {
     if (tagged.length !== playerIds.length) {
       throw new Error("One or more selected players were not found.");
     }
-        if (teamId) {
+    if (teamId) {
       for (const p of tagged) {
         if (p.teamId !== teamId) {
           throw new Error("Tagged players must belong to the selected team.");
@@ -46,7 +47,7 @@ export async function createVideo(formData: FormData) {
     }
   }
 
-  await prisma.video.create({
+  const created = await prisma.video.create({
     data: {
       title,
       description,
@@ -55,6 +56,22 @@ export async function createVideo(formData: FormData) {
       teamId,
       players: { connect: playerIds.map((id) => ({ id })) },
     },
+    include: { team: { select: { name: true } } },
+  });
+
+  // Videos can be tagged to individual (under-18) players, so the tagged players are recorded by ID.
+  await logAudit({
+    action: "video.create",
+    entityType: "Video",
+    entityId: created.id,
+    summary: `Added video "${title}" for ${created.team?.name ?? "all teams"}`,
+    changes: diffFields(null, {
+      title,
+      url,
+      team: created.team?.name ?? "All teams",
+      taggedPlayerCount: playerIds.length,
+      taggedPlayerIds: [...playerIds].sort(),
+    }),
   });
 
   revalidatePath("/admin/videos");
@@ -66,13 +83,32 @@ export async function deleteVideo(videoId: string) {
   const user = await requireStaff();
   const accessibleTeamIds = await getAccessibleTeamIds(user);
 
-  const video = await prisma.video.findUnique({ where: { id: videoId } });
+  const video = await prisma.video.findUnique({
+    where: { id: videoId },
+    include: { team: { select: { name: true } }, players: { select: { id: true } } },
+  });
   if (!video) return;
   if (accessibleTeamIds !== null) {
     assertTeamAccess(accessibleTeamIds, video.teamId);
   }
 
   await prisma.video.delete({ where: { id: videoId } });
+
+  // Logged after the delete succeeds, using the details captured before it.
+  await logAudit({
+    action: "video.delete",
+    entityType: "Video",
+    entityId: videoId,
+    summary: `Deleted video "${video.title}" for ${video.team?.name ?? "all teams"}`,
+    changes: {
+      ...diffFields(
+        { title: video.title, url: video.url },
+        { title: null, url: null }
+      ),
+      taggedPlayersAtDeletion: video.players.length,
+    },
+  });
+
   revalidatePath("/admin/videos");
   revalidatePath("/portal/videos");
 }
