@@ -5,6 +5,7 @@ import { requireStaff, getAccessibleTeamIds } from "@/lib/permissions";
 import { toCsv } from "@/lib/csv";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
 import { playerName } from "@/lib/playerDisplay";
+import { logAudit } from "@/lib/audit";
 
 export async function exportPhysicalTests(): Promise<string> {
   const user = await requireStaff();
@@ -25,6 +26,14 @@ export async function exportPhysicalTests(): Promise<string> {
     t.testedBy ?? "",
     ...PHYSICAL_TEST_METRICS.map((m) => t.results.find((r) => r.metric === m.label)?.value.toString() ?? ""),
   ]);
+
+  // The export contains player names, emails and test results, so it is worth a record of who took it.
+  await logAudit({
+    action: "physicalTest.export",
+    entityType: "PhysicalTest",
+    summary: `Exported ${tests.length} physical tests to CSV`,
+    changes: { rowCount: tests.length, scopedToTeams: accessibleTeamIds ? accessibleTeamIds.length : "all" },
+  });
 
   return toCsv(headers, rows);
 }
