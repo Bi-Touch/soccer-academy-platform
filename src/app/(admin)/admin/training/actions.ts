@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { toCsv } from "@/lib/csv";
 import { requireStaff, getAccessibleTeamIds, assertTeamAccess } from "@/lib/permissions";
 import { playerName } from "@/lib/playerDisplay";
+import { logAudit, diffFields } from "@/lib/audit";
 
 const VALID_STATUSES = ["PRESENT", "LATE", "ABSENT_EXCUSED", "ABSENT_UNEXCUSED", "INJURED"] as const;
 type Status = (typeof VALID_STATUSES)[number];
@@ -24,6 +25,14 @@ export async function saveAttendance(eventId: string, formData: FormData) {
   const staffUser = await prisma.user.findUnique({ where: { id: user.id } });
   const recordedBy = staffUser?.name ?? null;
 
+  // Existing records, so the log can show what actually changed per player.
+  const existingRecords = await prisma.trainingAttendance.findMany({ where: { eventId } });
+  const existingByPlayer = new Map(existingRecords.map((r) => [r.playerId, r]));
+  const isFirstSave = existingRecords.length === 0;
+
+  const statusCounts: Record<string, number> = {};
+  const playerChanges: Record<string, unknown> = {};
+
   for (const player of event.team.players) {
     const rawStatus = String(formData.get(`status_${player.id}`) || "PRESENT");
     const status = (VALID_STATUSES.includes(rawStatus as Status) ? rawStatus : "PRESENT") as Status;
@@ -37,10 +46,43 @@ export async function saveAttendance(eventId: string, formData: FormData) {
       recordedBy,
     };
 
+    statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+
+    // Notes are free text about a minor, so only whether a note changed is logged, not its content.
+    const before = existingByPlayer.get(player.id);
+    const diff = before
+      ? diffFields({ status: before.status, rating: before.rating }, { status: data.status, rating: data.rating })
+      : diffFields(null, { status: data.status, rating: data.rating });
+    const noteEdited = before ? (before.note ?? null) !== note : Boolean(note);
+    if (Object.keys(diff).length > 0 || noteEdited) {
+      playerChanges[player.id] = { player: player.name ?? player.id, changes: diff, noteEdited };
+    }
+
     await prisma.trainingAttendance.upsert({
       where: { eventId_playerId: { eventId, playerId: player.id } },
       create: { eventId, playerId: player.id, ...data },
       update: data,
+    });
+  }
+
+  // First save: one summary of who attended. Later saves: only the players whose entry changed.
+  // Saving again with no actual changes is not logged, to keep the log free of noise.
+  if (isFirstSave) {
+    await logAudit({
+      action: "training.attendance.record",
+      entityType: "ScheduleEvent",
+      entityId: eventId,
+      summary: `Recorded attendance for ${event.title} (${event.team.players.length} players)`,
+      changes: { playersRecorded: event.team.players.length, statusCounts },
+    });
+  } else if (Object.keys(playerChanges).length > 0) {
+    const changedCount = Object.keys(playerChanges).length;
+    await logAudit({
+      action: "training.attendance.update",
+      entityType: "ScheduleEvent",
+      entityId: eventId,
+      summary: `Updated attendance for ${event.title} (${changedCount} player${changedCount === 1 ? "" : "s"} changed)`,
+      changes: playerChanges,
     });
   }
 
@@ -64,6 +106,14 @@ export async function exportTrainingLog(): Promise<string> {
     playerName(r.player), r.player.user?.email ?? "",
     r.status, r.rating?.toString() ?? "", r.note ?? "",
   ]);
+
+  // The export contains player names, emails and coaching notes, so it is worth a record of who took it.
+  await logAudit({
+    action: "training.export",
+    entityType: "TrainingAttendance",
+    summary: `Exported ${records.length} training attendance records to CSV`,
+    changes: { rowCount: records.length, scopedToTeams: accessibleTeamIds ? accessibleTeamIds.length : "all" },
+  });
+
   return toCsv(headers, rows);
 }
-
