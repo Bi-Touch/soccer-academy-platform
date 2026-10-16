@@ -26,7 +26,7 @@ const CHILD_LINKS: [string, string][] = [
   ["schedule", "Schedule"],
   ["consent", "Consent"],
   ["videos", "Videos"],
-  ["leaderboard", "Leaderboard"],
+  //["leaderboard", "Leaderboard"],
 ];
 
 function initialsOf(name: string) {
@@ -255,12 +255,13 @@ export default async function PortalLayout({
                 label="Settings"
                 icon={NAV_ICONS.sliders}
               />
-
+              {/*
               <NavItem
                 href="/portal/leaderboard"
                 label="Leaderboard"
                 icon={NAV_ICONS.trophy}
               />
+              */}
             </>
           )}
         </nav>
