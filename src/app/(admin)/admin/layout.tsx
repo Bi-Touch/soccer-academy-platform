@@ -307,6 +307,7 @@ export default async function AdminLayout({
               </NavLink>
               <NavLink href="/admin/analysts">Analysts</NavLink>
               <NavLink href="/admin/enquiries">Enquiries</NavLink>
+              <NavLink href="/admin/audit">Audit Log</NavLink>
             </NavGroup>
           )}
 

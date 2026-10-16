@@ -479,7 +479,7 @@ model PasswordResetToken {
 }
 
 // ─────────────────────────────────────────────────────────────
-//Injury Tracking
+// Injury Tracking
 // ─────────────────────────────────────────────────────────────
 
 enum InjuryStatus {
@@ -502,4 +502,27 @@ model InjuryRecord {
   updatedAt          DateTime     @updatedAt
 
   @@index([playerId, status])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Audit Logs
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  actorId    String?
+  actorName  String?
+  actorRole  String?
+  action     String
+  entityType String?
+  entityId   String?
+  summary    String?
+  changes    Json?
+  ip         String?
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action])
 }
