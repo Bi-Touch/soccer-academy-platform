@@ -158,7 +158,7 @@ export async function deletePlayer(playerId: string) {
         shirtNumber: player.shirtNumber,
         teamId: player.teamId,
       },
-      null
+      { name: null, position: null, shirtNumber: null, teamId: null }
     ),
   });
 
