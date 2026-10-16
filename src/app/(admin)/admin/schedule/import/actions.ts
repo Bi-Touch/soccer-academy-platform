@@ -6,6 +6,7 @@ import { requireStaff, getAccessibleTeamIds } from "@/lib/permissions";
 import { parseCsv } from "@/lib/csv";
 import type { ImportResult } from "@/lib/importResult";
 import type { EventType } from "@prisma/client";
+import { logAudit } from "@/lib/audit";
 
 const VALID_TYPES = ["TRAINING", "MATCH", "DRILL", "OTHER"];
 
@@ -27,6 +28,7 @@ export async function importSchedule(formData: FormData): Promise<ImportResult> 
   const teamByName = new Map(teams.map((t) => [t.name.toLowerCase(), t]));
 
   const result: ImportResult = { createdCount: 0, updatedCount: 0, errors: [] };
+  const createdByTeam: Record<string, number> = {};
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -81,10 +83,25 @@ export async function importSchedule(formData: FormData): Promise<ImportResult> 
         },
       });
       result.createdCount++;
+      createdByTeam[team.name] = (createdByTeam[team.name] ?? 0) + 1;
     } catch {
       result.errors.push({ row: rowNum, message: "Failed to create event." });
     }
   }
+
+  // One entry per import, not per row.
+  await logAudit({
+    action: "schedule.import",
+    entityType: "ScheduleEvent",
+    summary: `Imported schedule from ${file.name}: ${result.createdCount} events created, ${result.errors.length} rows rejected`,
+    changes: {
+      fileName: file.name,
+      rowsInFile: rows.length,
+      createdCount: result.createdCount,
+      errorCount: result.errors.length,
+      createdByTeam,
+    },
+  });
 
   revalidatePath("/admin/schedule");
   return result;
