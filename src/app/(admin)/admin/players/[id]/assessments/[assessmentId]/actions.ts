@@ -6,8 +6,13 @@ import { redirect } from "next/navigation";
 import type { AssessmentDomain } from "@prisma/client";
 import { requireStaff, getAccessibleTeamIds, assertTeamAccess } from "@/lib/permissions";
 import { DOMAINS, ASSESSMENT_ATTRIBUTES } from "@/lib/assessmentAttributes";
+import { logAudit, diffFields } from "@/lib/audit";
 
 const ATTRS = ASSESSMENT_ATTRIBUTES as Record<string, string[]>;
+
+function dateKey(d: Date | null | undefined): string | null {
+  return d ? d.toISOString().slice(0, 10) : null;
+}
 
 async function loadAuthorized(assessmentId: string) {
   const user = await requireStaff();
@@ -15,7 +20,7 @@ async function loadAuthorized(assessmentId: string) {
 
   const assessment = await prisma.developmentAssessment.findUnique({
     where: { id: assessmentId },
-    include: { player: true },
+    include: { player: true, scores: true },
   });
   if (!assessment) throw new Error("Assessment not found.");
   assertTeamAccess(accessibleTeamIds, assessment.player.teamId);
@@ -43,6 +48,9 @@ export async function updateAssessment(assessmentId: string, formData: FormData)
     }
   }
 
+  const summary = String(formData.get("summary") || "").trim() || null;
+  const nextGoals = String(formData.get("nextGoals") || "").trim() || null;
+
   // Replace the old scores with the new set in one transaction, so a failure
   // can never leave an assessment half-edited.
   await prisma.$transaction([
@@ -51,12 +59,40 @@ export async function updateAssessment(assessmentId: string, formData: FormData)
       where: { id: assessmentId },
       data: {
         assessedAt,
-        summary: String(formData.get("summary") || "").trim() || null,
-        nextGoals: String(formData.get("nextGoals") || "").trim() || null,
+        summary,
+        nextGoals,
         scores: { create: scores },
       },
     }),
   ]);
+
+  // Compare every attribute that was rated before or after, so removed ratings show up too.
+  const beforeScores = new Map(assessment.scores.map((s) => [s.attribute, s.score]));
+  const afterScores = new Map(scores.map((s) => [s.attribute, s.score]));
+  const allAttributes = [...new Set([...beforeScores.keys(), ...afterScores.keys()])];
+  const scoreChanges = diffFields(
+    Object.fromEntries(allAttributes.map((a) => [a, beforeScores.get(a) ?? null])),
+    Object.fromEntries(allAttributes.map((a) => [a, afterScores.get(a) ?? null]))
+  );
+
+  const changes: Record<string, unknown> = {
+    ...diffFields({ assessedAt: dateKey(assessment.assessedAt) }, { assessedAt: dateKey(assessedAt) }),
+    ...scoreChanges,
+  };
+  // Summary and goals are free text about a minor's development, so only the fact they changed is logged.
+  if ((assessment.summary ?? null) !== summary) changes.summary = "edited";
+  if ((assessment.nextGoals ?? null) !== nextGoals) changes.nextGoals = "edited";
+
+  // Saving with no actual changes is not logged, to keep the log free of noise.
+  if (Object.keys(changes).length > 0) {
+    await logAudit({
+      action: "assessment.update",
+      entityType: "DevelopmentAssessment",
+      entityId: assessmentId,
+      summary: `Updated assessment for ${assessment.player.name}`,
+      changes,
+    });
+  }
 
   revalidatePath(`/admin/players/${assessment.playerId}/reports`);
   revalidatePath("/admin/assessments");
@@ -68,6 +104,18 @@ export async function deleteAssessment(assessmentId: string) {
 
   // AssessmentScore rows are removed automatically (onDelete: Cascade).
   await prisma.developmentAssessment.delete({ where: { id: assessmentId } });
+
+  // Logged after the delete succeeds, using the details captured before it.
+  await logAudit({
+    action: "assessment.delete",
+    entityType: "DevelopmentAssessment",
+    entityId: assessmentId,
+    summary: `Deleted assessment for ${assessment.player.name}`,
+    changes: {
+      assessedAt: dateKey(assessment.assessedAt),
+      scoresRemoved: assessment.scores.length,
+    },
+  });
 
   revalidatePath(`/admin/players/${assessment.playerId}/reports`);
   revalidatePath("/admin/assessments");
