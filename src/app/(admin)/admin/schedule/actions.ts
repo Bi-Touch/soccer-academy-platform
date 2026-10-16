@@ -6,6 +6,12 @@ import { redirect } from "next/navigation";
 import { notifyTeamOfNewEvent } from "@/lib/notifications";
 import { toCsv } from "@/lib/csv";
 import { requireStaff, getAccessibleTeamIds, assertTeamAccess } from "@/lib/permissions";
+import { logAudit, diffFields } from "@/lib/audit";
+
+// Full timestamps are logged as ISO strings so diffFields compares values, not Date object references.
+function iso(d: Date | null | undefined): string | null {
+  return d ? d.toISOString() : null;
+}
 
 export async function createEvent(formData: FormData) {
   const user = await requireStaff();
@@ -27,7 +33,7 @@ export async function createEvent(formData: FormData) {
 
   assertTeamAccess(accessibleTeamIds, teamId);
 
-    const event = await prisma.scheduleEvent.create({
+  const event = await prisma.scheduleEvent.create({
     data: {
       teamId,
       type,
@@ -40,6 +46,24 @@ export async function createEvent(formData: FormData) {
       awayScore: awayScoreRaw ? parseInt(awayScoreRaw, 10) : null,
     },
     include: { team: { select: { name: true } } },
+  });
+
+  await logAudit({
+    action: "schedule.create",
+    entityType: "ScheduleEvent",
+    entityId: event.id,
+    summary: `Created ${type.toLowerCase()} "${title}" for ${event.team.name}`,
+    changes: diffFields(null, {
+      team: event.team.name,
+      type,
+      title,
+      description,
+      location,
+      startsAt: iso(event.startsAt),
+      opponent,
+      homeScore: event.homeScore,
+      awayScore: event.awayScore,
+    }),
   });
 
   await notifyTeamOfNewEvent(teamId, event.team.name, title, event.startsAt).catch((e) =>
@@ -73,7 +97,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
     throw new Error("Title and date/time are required.");
   }
 
-  await prisma.scheduleEvent.update({
+  const updated = await prisma.scheduleEvent.update({
     where: { id: eventId },
     data: {
       type,
@@ -87,6 +111,40 @@ export async function updateEvent(eventId: string, formData: FormData) {
     },
   });
 
+  const changes = diffFields(
+    {
+      type: existingEvent.type,
+      title: existingEvent.title,
+      description: existingEvent.description,
+      location: existingEvent.location,
+      startsAt: iso(existingEvent.startsAt),
+      opponent: existingEvent.opponent,
+      homeScore: existingEvent.homeScore,
+      awayScore: existingEvent.awayScore,
+    },
+    {
+      type: updated.type,
+      title: updated.title,
+      description: updated.description,
+      location: updated.location,
+      startsAt: iso(updated.startsAt),
+      opponent: updated.opponent,
+      homeScore: updated.homeScore,
+      awayScore: updated.awayScore,
+    }
+  );
+
+  // Saving with no actual changes is not logged, to keep the log free of noise.
+  if (Object.keys(changes).length > 0) {
+    await logAudit({
+      action: "schedule.update",
+      entityType: "ScheduleEvent",
+      entityId: eventId,
+      summary: `Updated ${updated.type.toLowerCase()} "${updated.title}"`,
+      changes,
+    });
+  }
+
   revalidatePath("/admin/schedule");
   revalidatePath("/portal/schedule");
   revalidatePath("/fixtures");
@@ -97,11 +155,27 @@ export async function deleteEvent(eventId: string) {
   const user = await requireStaff();
   const accessibleTeamIds = await getAccessibleTeamIds(user);
 
-  const event = await prisma.scheduleEvent.findUnique({ where: { id: eventId } });
+  const event = await prisma.scheduleEvent.findUnique({
+    where: { id: eventId },
+    include: { team: { select: { name: true } } },
+  });
   if (!event) return;
   assertTeamAccess(accessibleTeamIds, event.teamId);
 
   await prisma.scheduleEvent.delete({ where: { id: eventId } });
+
+  // Logged after the delete succeeds, using the details captured before it.
+  await logAudit({
+    action: "schedule.delete",
+    entityType: "ScheduleEvent",
+    entityId: eventId,
+    summary: `Deleted ${event.type.toLowerCase()} "${event.title}" for ${event.team.name}`,
+    changes: diffFields(
+      { title: event.title, type: event.type, startsAt: iso(event.startsAt), opponent: event.opponent },
+      { title: null, type: null, startsAt: null, opponent: null }
+    ),
+  });
+
   revalidatePath("/admin/schedule");
   revalidatePath("/portal/schedule");
   revalidatePath("/fixtures");
