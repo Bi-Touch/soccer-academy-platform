@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { requireStaff, getAccessibleTeamIds, assertTeamAccess } from "@/lib/permissions";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
 import { ageGroupForDate, findBenchmark, scoreResult } from "@/lib/benchmarkScoring";
+import { logAudit } from "@/lib/audit";
 
 export async function createPhysicalTest(playerId: string, formData: FormData) {
   const user = await requireStaff();
@@ -63,6 +64,7 @@ export async function createPhysicalTest(playerId: string, formData: FormData) {
   let test = await prisma.physicalTest.findFirst({
     where: { playerId, testedAt: { gte: dayStart, lte: dayEnd } },
   });
+  const existed = Boolean(test);
 
   if (!test) {
     test = await prisma.physicalTest.create({
@@ -105,6 +107,21 @@ export async function createPhysicalTest(playerId: string, formData: FormData) {
     });
   }
 
+  // Which metrics were recorded is logged, but not the measured values: they are health data about a minor.
+  // A same-day entry merges into the existing test, so that case is logged as an update.
+  await logAudit({
+    action: existed ? "physicalTest.update" : "physicalTest.create",
+    entityType: "PhysicalTest",
+    entityId: test.id,
+    summary: `${existed ? "Updated" : "Recorded"} physical test for ${player.name} on ${dateStr}`,
+    changes: {
+      testDate: dateStr,
+      metricsRecorded: values.length,
+      metrics: values.map((v) => v.metric),
+      mergedIntoExistingTest: existed,
+    },
+  });
+
   revalidatePath(`/admin/players/${playerId}/reports`);
   revalidatePath("/admin/physical-tests");
   redirect(`/admin/players/${playerId}/reports`);
@@ -116,13 +133,25 @@ export async function deletePhysicalTest(testId: string) {
 
   const test = await prisma.physicalTest.findUnique({
     where: { id: testId },
-    include: { player: true },
+    include: { player: true, results: true },
   });
   if (!test) return;
   assertTeamAccess(accessibleTeamIds, test.player.teamId);
 
   // PhysicalTestResult rows are removed automatically (onDelete: Cascade).
   await prisma.physicalTest.delete({ where: { id: testId } });
+
+  // Logged after the delete succeeds, using the details captured before it.
+  await logAudit({
+    action: "physicalTest.delete",
+    entityType: "PhysicalTest",
+    entityId: testId,
+    summary: `Deleted physical test for ${test.player.name}`,
+    changes: {
+      testDate: test.testedAt.toISOString().slice(0, 10),
+      resultsRemoved: test.results.length,
+    },
+  });
 
   revalidatePath(`/admin/players/${test.playerId}/reports`);
   revalidatePath("/admin/physical-tests");
