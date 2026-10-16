@@ -6,6 +6,7 @@ import { requireStaff, getAccessibleTeamIds } from "@/lib/permissions";
 import { parseCsv } from "@/lib/csv";
 import { MATCH_STAT_KEYS } from "@/lib/matchStats";
 import type { ImportResult } from "@/lib/importResult";
+import { logAudit } from "@/lib/audit";
 
 export async function importMatchStats(formData: FormData): Promise<ImportResult> {
   const user = await requireStaff();
@@ -27,6 +28,7 @@ export async function importMatchStats(formData: FormData): Promise<ImportResult
 
   const result: ImportResult = { createdCount: 0, updatedCount: 0, errors: [] };
   const staffUser = await prisma.user.findUnique({ where: { id: user.id } });
+  let matchesCreated = 0;
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -53,6 +55,14 @@ export async function importMatchStats(formData: FormData): Promise<ImportResult
       continue;
     }
 
+    // Validate the player before touching the schedule, so a rejected row never leaves an empty match behind.
+    const email = (row.playerEmail || "").trim().toLowerCase();
+    const player = team.players.find((p) => p.user?.email?.toLowerCase() === email);
+    if (!player) {
+      result.errors.push({ row: rowNum, message: `Player with email "${email}" not found on team "${team.name}".` });
+      continue;
+    }
+
     let event = await prisma.scheduleEvent.findFirst({
       where: {
         teamId: team.id,
@@ -72,13 +82,7 @@ export async function importMatchStats(formData: FormData): Promise<ImportResult
           startsAt: dayStart,
         },
       });
-    }
-
-    const email = (row.playerEmail || "").trim().toLowerCase();
-    const player = team.players.find((p) => p.user?.email?.toLowerCase() === email);
-    if (!player) {
-      result.errors.push({ row: rowNum, message: `Player with email "${email}" not found on team "${team.name}".` });
-      continue;
+      matchesCreated++;
     }
 
     const data: Record<string, number> = {};
@@ -100,6 +104,21 @@ export async function importMatchStats(formData: FormData): Promise<ImportResult
     if (existing) result.updatedCount++;
     else result.createdCount++;
   }
+
+  // One entry per import, not per row.
+  await logAudit({
+    action: "match.import",
+    entityType: "MatchPerformance",
+    summary: `Imported match stats from ${file.name}: ${result.createdCount} created, ${result.updatedCount} updated, ${result.errors.length} rows rejected`,
+    changes: {
+      fileName: file.name,
+      rowsInFile: rows.length,
+      createdCount: result.createdCount,
+      updatedCount: result.updatedCount,
+      errorCount: result.errors.length,
+      matchesCreated,
+    },
+  });
 
   revalidatePath("/admin/matches");
   return result;
