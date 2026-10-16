@@ -66,7 +66,7 @@ export default async function HomePage() {
           </p>
           <div style={{ marginTop: 36, display: "flex", gap: 16 }}>
             <Link href="/teams" className="button">See our teams</Link>
-            <Link href="/login" className="button secondary">Player login</Link>
+            <Link href="/login" className="button secondary">login</Link>
           </div>
         </div>
       </section>

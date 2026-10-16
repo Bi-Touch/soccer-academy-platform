@@ -73,7 +73,7 @@ export function SiteHeader() {
           <Link href="/news" style={{ textDecoration: "none" }}>News</Link>
           <Link href="/contact" style={{ textDecoration: "none" }}>Contact</Link>
 
-          <Link href="/login" className="button">Player Login</Link>
+          <Link href="/login" className="button">Login</Link>
         </nav>
 
         <button
@@ -160,7 +160,7 @@ export function SiteHeader() {
             className="button"
             style={{ borderRadius: 8, marginTop: 8, textAlign: "center" }}
           >
-            Player Login
+            Login
           </Link>
         </nav>
       )}

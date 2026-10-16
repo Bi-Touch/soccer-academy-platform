@@ -8,6 +8,7 @@ const ADMIN_ONLY_PREFIXES = [
   "/admin/news",
   "/admin/enquiries",
   "/admin/gallery",
+  "/admin/audit",
 ];
 
 const PLAYER_ONLY_PORTAL_PREFIXES = [
