@@ -33,7 +33,11 @@ export async function createAssessment(playerId: string, formData: FormData) {
     for (const attribute of attributes) {
       const raw = String(formData.get(`score_${domain}_${attributeSlug(attribute)}`) || "");
       if (raw) {
-        scores.push({ domain, attribute, score: parseInt(raw, 10) });
+        const score = parseInt(raw, 10);
+        if (isNaN(score) || score < 1 || score > 5) {
+          throw new Error(`"${attribute}" must be a rating from 1 to 5.`);
+        }
+        scores.push({ domain, attribute, score });
       }
     }
   }
