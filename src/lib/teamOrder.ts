@@ -18,3 +18,24 @@ export function sortTeamsByAge<T extends { ageGroup: string; name: string }>(tea
       a.name.localeCompare(b.name)
   );
 }
+
+/**
+ * Sorts players by their team's age group, youngest first (U13 before U15), with players who have
+ * no team at the end. Players in the same age group are listed alphabetically by name.
+ *
+ * Players need their team loaded (include: { team: true }). Pass getName if the name comes from
+ * somewhere other than the player's own name field, for example your playerName helper.
+ */
+export function sortPlayersByAgeGroup<T extends { name?: string | null; team?: { ageGroup: string } | null }>(
+  players: T[],
+  getName: (player: T) => string = (p) => p.name ?? ""
+): T[] {
+  const ageNumber = (p: T) => {
+    const match = p.team?.ageGroup.match(/\d+/);
+    return match ? parseInt(match[0], 10) : Number.MAX_SAFE_INTEGER;
+  };
+
+  return [...players].sort(
+    (a, b) => ageNumber(a) - ageNumber(b) || getName(a).localeCompare(getName(b))
+  );
+}
