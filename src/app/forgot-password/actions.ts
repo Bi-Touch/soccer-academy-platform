@@ -4,14 +4,26 @@ import { prisma } from "@/lib/prisma";
 import { createResetToken } from "@/lib/passwordReset";
 import { sendPasswordResetEmail } from "@/lib/notifications";
 import { logAudit } from "@/lib/audit";
+import { isRateLimited, isRateLimitedForEntity } from "@/lib/rateLimit";
 
 export async function requestPasswordReset(email: string) {
+  // Over the per-IP limit: quietly do nothing but still answer "ok", so the response never changes
+  // and nobody can tell from it that they were throttled or whether an account exists.
+  if (await isRateLimited("auth.passwordReset.request", 5, 60)) {
+    return { ok: true };
+  }
+
   const normalized = email.trim().toLowerCase();
   const user = await prisma.user.findUnique({ where: { email: normalized } });
 
   // Always behave the same way regardless of whether the account exists —
   // this prevents the form from leaking which emails are registered.
   if (user) {
+    // Per-account limit as well, so one inbox can't be flooded from many different IPs.
+    if (await isRateLimitedForEntity("auth.passwordReset.request", user.id, 3, 60)) {
+      return { ok: true };
+    }
+
     const token = await createResetToken(user.id);
     const resetUrl = `${process.env.NEXTAUTH_URL || ""}/reset-password?token=${token}`;
 
