@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/permissions";
 import { sendRegistrationApprovedEmail, sendPlayerAddedEmail } from "@/lib/notifications";
 import { logAudit, diffFields } from "@/lib/audit";
+import { setFlashPassword } from "@/lib/flashPassword";
 
 function generateTempPassword() {
   return crypto.randomBytes(6).toString("base64").replace(/[+/=]/g, "").slice(0, 10);
@@ -90,8 +91,9 @@ export async function approveRegistration(registrationId: string) {
 
   revalidatePath("/admin/registrations");
 
+  // The password travels in a short-lived httpOnly cookie, not in the URL.
   if (tempPassword) {
-    redirect(`/admin/registrations/${registration.id}?tempPassword=${encodeURIComponent(tempPassword)}`);
+    setFlashPassword({ password: tempPassword, email: guardian.email, registrationId: registration.id });
   }
   redirect(`/admin/registrations/${registration.id}`);
 }
@@ -178,5 +180,7 @@ export async function resetGuardianPassword(guardianId: string) {
     changes: { email: guardian.email, loginCreated: !guardian.userId },
   });
 
-  redirect(`/admin/registrations?resetGuardianEmail=${encodeURIComponent(guardian.email)}&tempPassword=${encodeURIComponent(tempPassword)}`);
+  // The password travels in a short-lived httpOnly cookie, not in the URL.
+  setFlashPassword({ password: tempPassword, email: guardian.email });
+  redirect("/admin/registrations");
 }
