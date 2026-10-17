@@ -2,8 +2,15 @@
 
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { isRateLimited } from "@/lib/rateLimit";
 
 export async function submitContactForm(formData: FormData) {
+  // Honeypot: real visitors never see or fill this field, bots usually do.
+  // Pretend it worked so the bot gets no signal, but save nothing.
+  if (String(formData.get("website_url") || "").trim()) {
+    return { ok: true };
+  }
+
   const name = String(formData.get("name") || "").trim();
   const email = String(formData.get("email") || "").trim();
   const phone = String(formData.get("phone") || "").trim() || null;
@@ -11,6 +18,11 @@ export async function submitContactForm(formData: FormData) {
 
   if (!name || !email || !message) {
     return { ok: false, error: "Name, email, and message are required." };
+  }
+
+  // At most 5 enquiries per IP per hour.
+  if (await isRateLimited("enquiry.submit", 5, 60)) {
+    return { ok: false, error: "Too many messages sent from your connection. Please try again later." };
   }
 
   const created = await prisma.contactSubmission.create({
