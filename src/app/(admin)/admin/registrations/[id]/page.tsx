@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/permissions";
+import { readFlashPassword } from "@/lib/flashPassword";
 import { approveRegistration, rejectRegistration, requestChanges, resetGuardianPassword } from "../actions";
 import { StatusPill } from "@/components/StatusPill";
 
@@ -9,10 +10,8 @@ const cardStyle: React.CSSProperties = { background: "#fff", border: "1px solid 
 
 export default async function RegistrationDetailPage({
   params,
-  searchParams,
 }: {
   params: { id: string };
-  searchParams: { tempPassword?: string };
 }) {
   await requireAdmin();
 
@@ -21,6 +20,11 @@ export default async function RegistrationDetailPage({
     include: { parentGuardian: true, consent: true },
   });
   if (!registration) return notFound();
+
+  // The password arrives in a short-lived httpOnly cookie set by approveRegistration, not in the URL.
+  // It is only shown on the registration it was created for, so a leftover cookie can't appear on another page.
+  const flash = readFlashPassword();
+  const tempPassword = flash && flash.registrationId === registration.id ? flash.password : null;
 
   const approveWithId = approveRegistration.bind(null, registration.id);
   const rejectWithId = rejectRegistration.bind(null, registration.id);
@@ -40,16 +44,16 @@ export default async function RegistrationDetailPage({
         <StatusPill status={registration.status} />
       </div>
 
-      {searchParams.tempPassword && (
+      {tempPassword && (
         <div style={{ background: "#fdf3e2", border: "1px solid var(--floodlight)", borderRadius: 8, padding: 20, marginBottom: 20 }}>
           <p style={{ fontWeight: 600, color: "var(--pitch)", marginBottom: 8 }}>
             Account created — share these credentials with the guardian
           </p>
           <p style={{ fontSize: "0.9rem", marginBottom: 4 }}><strong>Email:</strong> {g.email}</p>
-          <p style={{ fontSize: "0.9rem", marginBottom: 8 }}><strong>Temporary password:</strong> {searchParams.tempPassword}</p>
+          <p style={{ fontSize: "0.9rem", marginBottom: 8 }}><strong>Temporary password:</strong> {tempPassword}</p>
           <p style={{ fontSize: "0.8rem", opacity: 0.7 }}>
-            This password is shown once and is not stored anywhere — if you navigate away, it cannot be retrieved again.
-            Ask the guardian to change it after their first login.
+            This password is not stored anywhere and is only kept for about two minutes. Copy it now — once it expires
+            it cannot be retrieved again, only reset. Ask the guardian to change it after their first login.
           </p>
         </div>
       )}
