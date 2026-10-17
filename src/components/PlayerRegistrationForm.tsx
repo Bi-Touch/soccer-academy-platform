@@ -15,6 +15,8 @@ export default function PlayerRegistrationForm() {
   const [data, setData] = useState<RegistrationFormData>(EMPTY_REGISTRATION);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // Honeypot value. Real visitors never see the field, so this stays empty for them.
+  const [honeypot, setHoneypot] = useState("");
 
   function update(patch: Partial<RegistrationFormData>) {
     setData((d) => ({ ...d, ...patch }));
@@ -23,13 +25,30 @@ export default function PlayerRegistrationForm() {
   function handleSubmit() {
     setError(null);
     startTransition(async () => {
-      const res = await submitPlayerRegistration(data);
+      // Built as a variable so the extra honeypot field doesn't need a change to RegistrationFormData.
+      const payload = { ...data, website_url: honeypot };
+      const res = await submitPlayerRegistration(payload);
       if (res && "error" in res) setError(res.error);
     });
   }
 
   return (
     <div>
+      {/* Honeypot: hidden from real visitors, bots tend to fill it. Must stay empty. */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", height: 0, overflow: "hidden" }}>
+        <label>
+          Leave this empty
+          <input
+            type="text"
+            name="website_url"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+        </label>
+      </div>
+
       <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginBottom: 8 }}>
         PLAYER REGISTRATION
       </h1>
