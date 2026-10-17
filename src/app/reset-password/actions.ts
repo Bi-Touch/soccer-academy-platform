@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { consumeResetToken } from "@/lib/passwordReset";
+import { logAudit } from "@/lib/audit";
 
 export async function resetPassword(token: string, newPassword: string): Promise<{ ok: boolean; error?: string }> {
   if (!token) return { ok: false, error: "Missing token." };
@@ -13,10 +14,20 @@ export async function resetPassword(token: string, newPassword: string): Promise
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
 
-  await prisma.$transaction([
+  const [user] = await prisma.$transaction([
     prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
     prisma.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
   ]);
+
+  // Nobody is signed in at this point, so the account owner is recorded as the actor.
+  // The token, the new password and its hash are deliberately never logged.
+  await logAudit({
+    action: "auth.passwordReset.complete",
+    actor: { id: user.id, name: user.name, role: user.role },
+    entityType: "User",
+    entityId: user.id,
+    summary: `Password changed through a reset link for ${user.name}`,
+  });
 
   return { ok: true };
 }
