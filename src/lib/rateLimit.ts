@@ -29,3 +29,21 @@ export async function isRateLimited(action: string, max: number, windowMinutes: 
   });
   return recent >= max;
 }
+
+/**
+ * Limit per record instead of per IP, e.g. "no more than 3 reset emails per account per hour".
+ * This stops one account being flooded from many different IPs. Same rules as above: it counts
+ * audit entries, so the action must call logAudit with this entityId after each success.
+ */
+export async function isRateLimitedForEntity(
+  action: string,
+  entityId: string,
+  max: number,
+  windowMinutes: number
+): Promise<boolean> {
+  const since = new Date(Date.now() - windowMinutes * 60 * 1000);
+  const recent = await prisma.auditLog.count({
+    where: { action, entityId, createdAt: { gte: since } },
+  });
+  return recent >= max;
+}
