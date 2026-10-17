@@ -13,8 +13,25 @@ const rowStyle: React.CSSProperties = {
   gap: 16,
 };
 
-export default async function AdminTeamsPage() {
+function plural(count: number, word: string) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
+}
+
+export default async function AdminTeamsPage({
+  searchParams,
+}: {
+  searchParams: { deleteBlocked?: string; events?: string; players?: string };
+}) {
   const teams = await prisma.team.findMany({ include: { players: true } });
+
+  // Set by deleteTeam when a team could not be removed. The name is only displayed, never trusted.
+  const blockedName = searchParams.deleteBlocked?.slice(0, 80);
+  const blockedEvents = Number(searchParams.events) || 0;
+  const blockedPlayers = Number(searchParams.players) || 0;
+  const blockedParts = [
+    blockedEvents > 0 ? plural(blockedEvents, "scheduled event") : null,
+    blockedPlayers > 0 ? plural(blockedPlayers, "player") : null,
+  ].filter(Boolean);
 
   return (
     <div>
@@ -22,6 +39,18 @@ export default async function AdminTeamsPage() {
         <h1 className="display" style={{ fontSize: "2.4rem", color: "var(--pitch)" }}>TEAMS</h1>
         <Link href="/admin/teams/new" className="button">+ Add Team</Link>
       </div>
+
+      {blockedName && (
+        <div
+          role="alert"
+          style={{ background: "#fdecec", border: "1px solid var(--card-red)", borderRadius: 8, padding: 16, marginTop: 16, color: "var(--card-red)", fontSize: "0.9rem", lineHeight: 1.5 }}
+        >
+          <strong>{blockedName} can&apos;t be deleted.</strong>{" "}
+          {blockedParts.length > 0 ? `It still has ${blockedParts.join(" and ")}. ` : ""}
+          Deleting a team permanently removes its scheduled events along with their attendance and match records,
+          and leaves its players without a team. Delete the events and move or remove the players first.
+        </div>
+      )}
 
       <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
         {teams.map((team) => (
