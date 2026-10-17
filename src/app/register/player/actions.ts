@@ -4,8 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import type { RegistrationFormData } from "@/lib/registrationTypes";
 import { logAudit } from "@/lib/audit";
+import { isRateLimited } from "@/lib/rateLimit";
 
 export async function submitPlayerRegistration(data: RegistrationFormData): Promise<{ error: string } | void> {
+  // Honeypot: real visitors never see or fill this field, bots usually do. Nothing is saved.
+  if ((data as RegistrationFormData & { website_url?: string }).website_url?.trim()) {
+    return { error: "Something went wrong. Please try again." };
+  }
+
   if (!data.guardianFirstName?.trim() || !data.guardianLastName?.trim() || !data.guardianRelationship?.trim() || !data.guardianPhone?.trim() || !data.guardianEmail?.trim()) {
     return { error: "Please complete all required guardian fields." };
   }
@@ -19,6 +25,11 @@ export async function submitPlayerRegistration(data: RegistrationFormData): Prom
   const dob = new Date(data.playerDateOfBirth);
   if (isNaN(dob.getTime())) {
     return { error: "Invalid date of birth." };
+  }
+
+  // At most 5 registrations per IP per hour, which still leaves room for a family registering several children.
+  if (await isRateLimited("registration.submit", 5, 60)) {
+    return { error: "Too many registrations sent from your connection. Please try again later." };
   }
 
   const email = data.guardianEmail.trim().toLowerCase();
