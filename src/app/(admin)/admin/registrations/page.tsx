@@ -1,21 +1,23 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
+import { readFlashPassword } from "@/lib/flashPassword";
 import { StatusPill } from "@/components/StatusPill";
 import { SearchableTable } from "@/components/SearchableTable";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 
-export default async function AdminRegistrationsPage({
-  searchParams,
-}: {
-  searchParams: { resetGuardianEmail?: string; tempPassword?: string };
-}) {
+export default async function AdminRegistrationsPage() {
   await requireAdmin();
 
   const registrations = await prisma.playerRegistration.findMany({
     include: { parentGuardian: true },
     orderBy: { createdAt: "desc" },
   });
+
+  // The password arrives in a short-lived httpOnly cookie set by resetGuardianPassword, not in the URL.
+  // A cookie with a registrationId belongs to an approval and is shown on that registration's page instead.
+  const flash = readFlashPassword();
+  const reset = flash && flash.email && !flash.registrationId ? flash : null;
 
   const rows = registrations.map((r) => ({
     id: r.id,
@@ -44,11 +46,14 @@ export default async function AdminRegistrationsPage({
        <CopyLinkButton path="/register/player" />
       </div>
 
-      {searchParams.tempPassword && searchParams.resetGuardianEmail && (
+      {reset && (
         <div style={{ background: "#fdf3e2", border: "1px solid var(--floodlight)", borderRadius: 8, padding: 20, margin: "16px 0" }}>
           <p style={{ fontWeight: 600, color: "var(--pitch)" }}>Password reset</p>
-          <p style={{ fontSize: "0.9rem" }}><strong>Email:</strong> {searchParams.resetGuardianEmail}</p>
-          <p style={{ fontSize: "0.9rem" }}><strong>Password:</strong> {searchParams.tempPassword}</p>
+          <p style={{ fontSize: "0.9rem" }}><strong>Email:</strong> {reset.email}</p>
+          <p style={{ fontSize: "0.9rem" }}><strong>Password:</strong> {reset.password}</p>
+          <p style={{ fontSize: "0.8rem", opacity: 0.7, marginTop: 8 }}>
+            Not stored anywhere and only kept for about two minutes. Copy it now.
+          </p>
         </div>
       )}
 
