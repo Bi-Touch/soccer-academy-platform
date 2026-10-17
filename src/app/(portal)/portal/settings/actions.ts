@@ -46,6 +46,18 @@ export async function updateNotificationPrefs(prefs: { emailNotifications: boole
 // Push subscription saves and removals are device plumbing (the endpoint and keys are secrets), so they are not audited.
 export async function savePushSubscription(sub: { endpoint: string; p256dh: string; auth: string }) {
   const userId = await currentUserId();
+
+  // An endpoint that already belongs to a different account may only be moved by someone who also
+  // holds its keys. A browser re-subscribing on the same device (for example after another person
+  // signs in on a shared phone) sends the same keys, so that still works. Someone who has only
+  // learned the endpoint URL cannot take the device over.
+  const existing = await prisma.pushSubscription.findUnique({ where: { endpoint: sub.endpoint } });
+  if (existing && existing.userId !== userId) {
+    if (existing.p256dh !== sub.p256dh || existing.auth !== sub.auth) {
+      throw new Error("This device is already registered to another account.");
+    }
+  }
+
   await prisma.pushSubscription.upsert({
     where: { endpoint: sub.endpoint },
     update: { userId, p256dh: sub.p256dh, auth: sub.auth },
