@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import type { RegistrationFormData } from "@/lib/registrationTypes";
+import { logAudit } from "@/lib/audit";
 
 export async function submitPlayerRegistration(data: RegistrationFormData): Promise<{ error: string } | void> {
   if (!data.guardianFirstName?.trim() || !data.guardianLastName?.trim() || !data.guardianRelationship?.trim() || !data.guardianPhone?.trim() || !data.guardianEmail?.trim()) {
@@ -26,6 +27,7 @@ export async function submitPlayerRegistration(data: RegistrationFormData): Prom
   // registering a second child doesn't end up with two separate guardian
   // records (and, later, two separate logins).
   let guardian = await prisma.parentGuardian.findFirst({ where: { email } });
+  let guardianCreated = false;
   if (!guardian) {
     guardian = await prisma.parentGuardian.create({
       data: {
@@ -38,6 +40,7 @@ export async function submitPlayerRegistration(data: RegistrationFormData): Prom
         idNumber: data.guardianIdNumber?.trim() || null,
       },
     });
+    guardianCreated = true;
   }
 
   const registration = await prisma.playerRegistration.create({
@@ -73,6 +76,22 @@ export async function submitPlayerRegistration(data: RegistrationFormData): Prom
           consentedAt: new Date(),
         },
       },
+    },
+  });
+
+  // Public form, so there is no signed-in actor (the request IP is recorded automatically).
+  // Contact details, medical notes, ID numbers and the individual consent choices stay in the
+  // registration itself and are not copied into the log. Logged before redirect(), which throws.
+  await logAudit({
+    action: "registration.submit",
+    entityType: "PlayerRegistration",
+    entityId: registration.id,
+    summary: `New registration submitted for ${registration.firstName} ${registration.lastName}`,
+    changes: {
+      status: "PENDING",
+      guardianId: guardian.id,
+      newGuardianRecord: guardianCreated,
+      consentVersion: "1.0",
     },
   });
 
