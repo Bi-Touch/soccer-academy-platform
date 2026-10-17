@@ -29,6 +29,7 @@ export async function importSchedule(formData: FormData): Promise<ImportResult> 
 
   const result: ImportResult = { createdCount: 0, updatedCount: 0, errors: [] };
   const createdByTeam: Record<string, number> = {};
+  let duplicatesSkipped = 0;
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -69,6 +70,26 @@ export async function importSchedule(formData: FormData): Promise<ImportResult> 
     const awayScoreRaw = (row.awayScore || "").trim();
 
     try {
+      // Skip an event that already exists (same team, type, title and start time), so uploading
+      // the same CSV twice, or repeating a row inside one file, never creates double fixtures.
+      const duplicate = await prisma.scheduleEvent.findFirst({
+        where: {
+          teamId: team.id,
+          type: typeRaw as EventType,
+          title: { equals: title, mode: "insensitive" },
+          startsAt,
+        },
+        select: { id: true },
+      });
+      if (duplicate) {
+        duplicatesSkipped++;
+        result.errors.push({
+          row: rowNum,
+          message: `Skipped duplicate: "${title}" for ${team.name} at ${dateStr} ${timeStr} already exists.`,
+        });
+        continue;
+      }
+
       await prisma.scheduleEvent.create({
         data: {
           teamId: team.id,
@@ -93,12 +114,13 @@ export async function importSchedule(formData: FormData): Promise<ImportResult> 
   await logAudit({
     action: "schedule.import",
     entityType: "ScheduleEvent",
-    summary: `Imported schedule from ${file.name}: ${result.createdCount} events created, ${result.errors.length} rows rejected`,
+    summary: `Imported schedule from ${file.name}: ${result.createdCount} events created, ${duplicatesSkipped} duplicates skipped, ${result.errors.length - duplicatesSkipped} rows rejected`,
     changes: {
       fileName: file.name,
       rowsInFile: rows.length,
       createdCount: result.createdCount,
-      errorCount: result.errors.length,
+      errorCount: result.errors.length - duplicatesSkipped,
+      duplicatesSkipped,
       createdByTeam,
     },
   });
