@@ -13,7 +13,7 @@ export type AuditEntry = {
   changes?: unknown;
 };
 
-const SENSITIVE_KEYS = new Set(["password", "passwordHash", "token", "secret", "auth", "p256dh", "endpoint", "dateOfBirth"]);
+const SENSITIVE_KEYS = new Set(["password", "passwordHash", "token", "secret", "auth", "p256dh", "endpoint", "dateOfBirth", "email", "injuryType"]);
 
 function sanitize(value: unknown): Prisma.InputJsonValue | undefined {
   if (value === undefined || value === null) return undefined;
