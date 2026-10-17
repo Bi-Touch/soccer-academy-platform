@@ -74,9 +74,19 @@ export async function deleteTeam(teamId: string) {
 
   const team = await prisma.team.findUnique({
     where: { id: teamId },
-    include: { _count: { select: { players: true } } },
+    include: { _count: { select: { players: true, schedules: true } } },
   });
   if (!team) return;
+
+  // In the database, deleting a team also deletes every scheduled event for it, and with those
+  // all training attendance and match stats. That can't be undone, so refuse while any exist.
+  // (Players are different: they stay and simply lose their team, and can be assigned to a new one.)
+  if (team._count.schedules > 0) {
+    throw new Error(
+      `Can't delete ${team.name}: it still has ${team._count.schedules} scheduled event${team._count.schedules === 1 ? "" : "s"}, ` +
+        "and deleting the team would permanently remove them along with their attendance and match records. Delete those events first."
+    );
+  }
 
   await prisma.team.delete({ where: { id: teamId } });
 
