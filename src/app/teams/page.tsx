@@ -2,11 +2,15 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { prisma } from "@/lib/prisma";
+import { sortTeamsByAge } from "@/lib/teamOrder";
 
 export default async function TeamsPage() {
-  const teams = await prisma.team.findMany({
-    include: { players: true },
-  });
+  // Always shown youngest age group first, whatever order the database happens to return.
+  const teams = sortTeamsByAge(
+    await prisma.team.findMany({
+      include: { players: true },
+    })
+  );
 
   return (
     <>
