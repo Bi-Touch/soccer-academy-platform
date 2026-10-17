@@ -17,8 +17,8 @@ export default function ContactPage() {
     const formData = new FormData(e.currentTarget);
     const result = await submitContactForm(formData);
     if (result.ok) {
+      // The form is replaced by the thank-you message, so there is nothing to reset.
       setStatus("success");
-      e.currentTarget.reset();
     } else {
       setStatus("error");
       setError(result.error ?? "Something went wrong. Please try again.");
@@ -40,6 +40,14 @@ export default function ContactPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Honeypot: hidden from real visitors, bots tend to fill it. Must stay empty. */}
+            <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", height: 0, overflow: "hidden" }}>
+              <label>
+                Leave this empty
+                <input type="text" name="website_url" tabIndex={-1} autoComplete="off" />
+              </label>
+            </div>
+
             <label>
               Name
               <input name="name" required style={{ display: "block", width: "100%", padding: 10, marginTop: 4 }} />
@@ -63,7 +71,7 @@ export default function ContactPage() {
               {status === "submitting" ? "Sending..." : "Send message"}
             </button>
           </form>
-                )}
+        )}
 
         <h2 className="display" style={{ fontSize: "1.6rem", color: "var(--pitch)", marginTop: 56, marginBottom: 8 }}>
           FREQUENTLY ASKED QUESTIONS
