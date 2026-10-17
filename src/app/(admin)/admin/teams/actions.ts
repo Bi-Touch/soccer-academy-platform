@@ -78,13 +78,28 @@ export async function deleteTeam(teamId: string) {
   });
   if (!team) return;
 
-  // In the database, deleting a team also deletes every scheduled event for it, and with those
-  // all training attendance and match stats. That can't be undone, so refuse while any exist.
-  // (Players are different: they stay and simply lose their team, and can be assigned to a new one.)
-  if (team._count.schedules > 0) {
-    throw new Error(
-      `Can't delete ${team.name}: it still has ${team._count.schedules} scheduled event${team._count.schedules === 1 ? "" : "s"}, ` +
-        "and deleting the team would permanently remove them along with their attendance and match records. Delete those events first."
+  // Deleting a team permanently deletes its scheduled events (and with them all attendance and match
+  // stats), and leaves its players without a team. Refuse while either exists.
+  // The reason is passed back through the URL instead of a thrown error, because in production
+  // Next.js replaces thrown messages with a generic "Application error" page.
+  const eventCount = team._count.schedules;
+  const playerCount = team._count.players;
+  if (eventCount > 0 || playerCount > 0) {
+    const parts: string[] = [];
+    if (eventCount > 0) parts.push(`${eventCount} scheduled event${eventCount === 1 ? "" : "s"}`);
+    if (playerCount > 0) parts.push(`${playerCount} player${playerCount === 1 ? "" : "s"}`);
+
+    // A blocked attempt is still worth a record of who tried it.
+    await logAudit({
+      action: "team.delete.blocked",
+      entityType: "Team",
+      entityId: teamId,
+      summary: `Blocked deletion of team ${team.name}: it still has ${parts.join(" and ")}`,
+      changes: { scheduledEvents: eventCount, players: playerCount },
+    });
+
+    redirect(
+      `/admin/teams?deleteBlocked=${encodeURIComponent(team.name)}&events=${eventCount}&players=${playerCount}`
     );
   }
 
