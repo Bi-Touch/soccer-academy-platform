@@ -1,3 +1,0 @@
-
-ALTER TABLE "PlayerHealthProfile"
-ADD COLUMN IF NOT EXISTS "notes" TEXT;
