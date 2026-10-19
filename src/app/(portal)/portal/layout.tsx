@@ -25,6 +25,7 @@ const CHILD_LINKS: [string, string][] = [
   ["reports", "Reports"],
   ["schedule", "Schedule"],
   ["consent", "Consent"],
+  ["health", "Health"],
   ["videos", "Videos"],
   //["leaderboard", "Leaderboard"],
 ];
