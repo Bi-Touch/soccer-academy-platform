@@ -6,7 +6,8 @@ import { playerName } from "@/lib/playerDisplay";
 import { PlayerLoginPanel } from "@/components/PlayerLoginPanel";
 import { createPlayerLogin, resetPlayerLoginPassword } from "./actions";
 
-export default async function PlayerLoginPage({ params }: { params: { id: string } }) {
+export default async function PlayerLoginPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireAdmin();
 
   const player = await prisma.player.findUnique({ where: { id: params.id }, include: { user: true } });

@@ -1,10 +1,15 @@
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
-function getClientIp(): string | null {
+async function getClientIp(): Promise<string | null> {
   try {
-    const h = headers();
-    return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? null;
+    const h = await headers();
+
+    return (
+      h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      h.get("x-real-ip") ??
+      null
+    );
   } catch {
     return null;
   }
@@ -20,7 +25,7 @@ function getClientIp(): string | null {
  * If the IP can't be determined, the request is allowed rather than blocked.
  */
 export async function isRateLimited(action: string, max: number, windowMinutes: number): Promise<boolean> {
-  const ip = getClientIp();
+  const ip = await getClientIp();
   if (!ip) return false;
 
   const since = new Date(Date.now() - windowMinutes * 60 * 1000);

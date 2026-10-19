@@ -6,7 +6,8 @@ import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { BarChart } from "@/components/BarChart";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
 
-export default async function PhysicalTestsPage({ params }: { params: { id: string } }) {
+export default async function PhysicalTestsPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

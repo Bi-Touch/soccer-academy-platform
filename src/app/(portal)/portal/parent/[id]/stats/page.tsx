@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { requireOwnedChild } from "@/lib/parentAccess";
 import { ChildPageShell } from "@/components/parent/ChildPageShell";
 
-export default async function ParentChildStatsPage({ params }: { params: { id: string } }) {
+export default async function ParentChildStatsPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { player, child } = await requireOwnedChild(params.id);
 
   const stats = await prisma.playerStat.findMany({

@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-export default async function CoachProfilePage({ params }: { params: { id: string } }) {
+export default async function CoachProfilePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const coach = await prisma.coach.findUnique({
     where: { id: params.id },
     include: { user: true, teams: true },

@@ -8,11 +8,12 @@ import { StatusPill } from "@/components/StatusPill";
 
 const cardStyle: React.CSSProperties = { background: "#fff", border: "1px solid #e3ded2", borderRadius: 8, padding: 20, marginBottom: 20 };
 
-export default async function RegistrationDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function RegistrationDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   await requireAdmin();
 
   const registration = await prisma.playerRegistration.findUnique({
@@ -23,7 +24,7 @@ export default async function RegistrationDetailPage({
 
   // The password arrives in a short-lived httpOnly cookie set by approveRegistration, not in the URL.
   // It is only shown on the registration it was created for, so a leftover cookie can't appear on another page.
-  const flash = readFlashPassword();
+  const flash = await readFlashPassword();
   const tempPassword = flash && flash.registrationId === registration.id ? flash.password : null;
 
   const approveWithId = approveRegistration.bind(null, registration.id);

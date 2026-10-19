@@ -16,7 +16,8 @@ const ROWS: { key: string; label: string }[] = [
   { key: "agents", label: "Agents" },
 ];
 
-export default async function ParentChildConsentPage({ params }: { params: { id: string } }) {
+export default async function ParentChildConsentPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { player, child } = await requireOwnedChild(params.id);
 
   const registration = await prisma.playerRegistration.findFirst({

@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { requireOwnedChild } from "@/lib/parentAccess";
 import { ChildPageShell } from "@/components/parent/ChildPageShell";
 
-export default async function ParentChildVideosPage({ params }: { params: { id: string } }) {
+export default async function ParentChildVideosPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { player, child } = await requireOwnedChild(params.id);
 
   // Team videos for this child's team, plus academy-wide videos (no team set).

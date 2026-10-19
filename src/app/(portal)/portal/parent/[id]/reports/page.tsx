@@ -69,7 +69,8 @@ function domainAverages(scores: { domain: unknown; score: number }[]) {
   });
 }
 
-export default async function ParentChildReportsPage({ params }: { params: { id: string } }) {
+export default async function ParentChildReportsPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { player, child } = await requireOwnedChild(params.id);
 
   const [attendance, assessments, tests, performances] = await Promise.all([

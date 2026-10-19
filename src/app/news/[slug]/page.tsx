@@ -7,7 +7,8 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const post = await prisma.newsPost.findUnique({ where: { slug: params.slug } });
   if (!post) return {};
 
@@ -29,7 +30,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function NewsPostPage({ params }: { params: { slug: string } }) {
+export default async function NewsPostPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const post = await prisma.newsPost.findUnique({ where: { slug: params.slug } });
   if (!post) return notFound();
 

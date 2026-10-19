@@ -36,7 +36,8 @@ async function loadSummary(playerId: string) {
   return { player, latestStat, domainAverages, testScores };
 }
 
-export default async function PlayerComparePage({ searchParams }: { searchParams: { a?: string; b?: string } }) {
+export default async function PlayerComparePage(props: { searchParams: Promise<{ a?: string; b?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

@@ -13,7 +13,8 @@ const STATUS_LABELS: Record<string, string> = {
   INJURED: "Injured",
 };
 
-export default async function PlayerTrainingReportPage({ params }: { params: { id: string } }) {
+export default async function PlayerTrainingReportPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

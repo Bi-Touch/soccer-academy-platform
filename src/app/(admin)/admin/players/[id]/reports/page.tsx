@@ -28,27 +28,28 @@ const STATUS_LABELS: Record<string, string> = {
   INJURED: "Injured",
 };
 
-export default async function PlayerReportsPage({ params }: { params: { id: string } }) {
+export default async function PlayerReportsPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 
   const player = await prisma.player.findUnique({ where: { id: params.id }, include: { user: true } });
-if (!player) return notFound();
-if (accessibleTeamIds && (!player.teamId || !accessibleTeamIds.includes(player.teamId))) {
-  return notFound();
-}
+  if (!player) return notFound();
+  if (accessibleTeamIds && (!player.teamId || !accessibleTeamIds.includes(player.teamId))) {
+    return notFound();
+  }
 
-const activeInjuries = await prisma.injuryRecord.findMany({
-  where: { playerId: player.id, status: "ACTIVE" },
-  orderBy: { dateOccurred: "desc" },
-});
+  const activeInjuries = await prisma.injuryRecord.findMany({
+    where: { playerId: player.id, status: "ACTIVE" },
+    orderBy: { dateOccurred: "desc" },
+  });
 
-const [trainingCount, assessmentsCount, physicalCount, matchesCount] = await Promise.all([
-    prisma.trainingAttendance.count({ where: { playerId: player.id } }),
-    prisma.developmentAssessment.count({ where: { playerId: player.id } }),
-    prisma.physicalTest.count({ where: { playerId: player.id } }),
-    prisma.matchPerformance.count({ where: { playerId: player.id } }),
-  ]);
+  const [trainingCount, assessmentsCount, physicalCount, matchesCount] = await Promise.all([
+      prisma.trainingAttendance.count({ where: { playerId: player.id } }),
+      prisma.developmentAssessment.count({ where: { playerId: player.id } }),
+      prisma.physicalTest.count({ where: { playerId: player.id } }),
+      prisma.matchPerformance.count({ where: { playerId: player.id } }),
+    ]);
 
   const defaultActive =
     trainingCount > 0 ? "attendance" :
@@ -57,48 +58,48 @@ const [trainingCount, assessmentsCount, physicalCount, matchesCount] = await Pro
     matchesCount > 0 ? "matches" :
     "attendance";
 
-    return (
-    <div>
-      <Link href="/admin/players" style={{ fontSize: "0.9rem", opacity: 0.7 }}>&larr; All players</Link>
+  return (
+  <div>
+    <Link href="/admin/players" style={{ fontSize: "0.9rem", opacity: 0.7 }}>&larr; All players</Link>
 
-      <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12 }}>
-        {playerName(player).toUpperCase()} — REPORTS
-      </h1> 
-        
-        <Link href={`/admin/players/${player.id}/development-index`} style={{ fontSize: "0.9rem" }}>View Development Index &rarr;</Link>
+    <h1 className="display" style={{ fontSize: "2.2rem", color: "var(--pitch)", marginTop: 12 }}>
+      {playerName(player).toUpperCase()} — REPORTS
+    </h1>
 
-        {activeInjuries.length > 0 && (
-          < div style={{ background: "#fdecec", border: "1px solid var(--card-red)", borderRadius: 8, padding: 16, margin: "16px 0", }}>
-        {activeInjuries.map((i) => (
-          <p key={i.id} style={{ fontSize: "0.9rem", margin: "4px 0" }}>
-          🚑 <strong>{i.injuryType}</strong> since{" "}
-          {i.dateOccurred.toLocaleDateString()}
-          {i.expectedReturnDate &&
-          ` · expected back ${i.expectedReturnDate.toLocaleDateString()}`}
-          </p>
-        ))}
+      <Link href={`/admin/players/${player.id}/development-index`} style={{ fontSize: "0.9rem" }}>View Development Index &rarr;</Link>
 
-        <Link href={`/admin/players/${player.id}/injuries/new`} style={{ fontSize: "0.85rem" }}> Log another injury </Link>
-    </div>
-    )}
-      
-      <ReportTabs
-        defaultActive={defaultActive}
-        labels={{
-          attendance: { title: "Training", body: "Attendance rate, coach ratings, and full session history." },
-          assessments: { title: "Assessments", body: "Development scores across technical, tactical, physical, and mental domains." },
-          physical: { title: "Physical Tests", body: "Trend charts for every recorded fitness metric." },
-          matches: { title: "Match Stats", body: "Goals, assists, passing accuracy, and defensive actions per match." },
-          injuries: { title: "Injuries", body: "Full injury history, recovery status, and return-to-play details.", },
-        }}
-        attendance={await renderTraining(player.id)}
-        assessments={await renderAssessments(player.id)}
-        physical={await renderPhysical(player.id)}
-        matches={await renderMatches(player.id)}
-        injuries={await renderInjuries(player.id)}
-      />
-    </div>
-  );
+      {activeInjuries.length > 0 && (
+        < div style={{ background: "#fdecec", border: "1px solid var(--card-red)", borderRadius: 8, padding: 16, margin: "16px 0", }}>
+      {activeInjuries.map((i) => (
+        <p key={i.id} style={{ fontSize: "0.9rem", margin: "4px 0" }}>
+        🚑 <strong>{i.injuryType}</strong> since{" "}
+        {i.dateOccurred.toLocaleDateString()}
+        {i.expectedReturnDate &&
+        ` · expected back ${i.expectedReturnDate.toLocaleDateString()}`}
+        </p>
+      ))}
+
+      <Link href={`/admin/players/${player.id}/injuries/new`} style={{ fontSize: "0.85rem" }}> Log another injury </Link>
+  </div>
+  )}
+
+    <ReportTabs
+      defaultActive={defaultActive}
+      labels={{
+        attendance: { title: "Training", body: "Attendance rate, coach ratings, and full session history." },
+        assessments: { title: "Assessments", body: "Development scores across technical, tactical, physical, and mental domains." },
+        physical: { title: "Physical Tests", body: "Trend charts for every recorded fitness metric." },
+        matches: { title: "Match Stats", body: "Goals, assists, passing accuracy, and defensive actions per match." },
+        injuries: { title: "Injuries", body: "Full injury history, recovery status, and return-to-play details.", },
+      }}
+      attendance={await renderTraining(player.id)}
+      assessments={await renderAssessments(player.id)}
+      physical={await renderPhysical(player.id)}
+      matches={await renderMatches(player.id)}
+      injuries={await renderInjuries(player.id)}
+    />
+  </div>
+);
 }
 
 async function renderTraining(playerId: string) {
@@ -387,7 +388,7 @@ async function renderPhysical(playerId: string) {
                      style={{ background: "none", border: "none", color: "var(--card-red)", cursor: "pointer", fontSize: "0.85rem", padding: 0 }}
                   >
                     Delete
-                   </ConfirmSubmitButton>  
+                   </ConfirmSubmitButton>
                   </form>
                 </td>
               </tr>

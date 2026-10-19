@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { updateCoach } from "../../actions";
 import { notFound } from "next/navigation";
 
-export default async function EditCoachPage({ params }: { params: { id: string } }) {
+export default async function EditCoachPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const [coach, teams] = await Promise.all([
     prisma.coach.findUnique({ where: { id: params.id }, include: { user: true, teams: true } }),
     prisma.team.findMany(),

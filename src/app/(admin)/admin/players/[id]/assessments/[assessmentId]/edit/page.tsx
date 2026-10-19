@@ -6,7 +6,8 @@ import { playerName } from "@/lib/playerDisplay";
 import { AssessmentEditForm } from "@/components/AssessmentEditForm";
 import { updateAssessment } from "../actions";
 
-export default async function EditAssessmentPage({ params }: { params: { id: string; assessmentId: string } }) {
+export default async function EditAssessmentPage(props: { params: Promise<{ id: string; assessmentId: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

@@ -11,7 +11,8 @@ function ageFromDob(dob: Date): number {
   return Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 }
 
-export default async function DevelopmentIndexPage({ params }: { params: { id: string } }) {
+export default async function DevelopmentIndexPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const player = await prisma.player.findUnique({
     where: { id: params.id },
     include: {

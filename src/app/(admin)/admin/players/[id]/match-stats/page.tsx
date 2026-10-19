@@ -15,7 +15,8 @@ const cardStyle: React.CSSProperties = {
   padding: 20,
 };
 
-export default async function PlayerMatchStatsPage({ params }: { params: { id: string } }) {
+export default async function PlayerMatchStatsPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

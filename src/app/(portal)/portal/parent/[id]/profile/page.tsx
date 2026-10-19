@@ -5,7 +5,8 @@ import { formatDate } from "@/lib/dates";
 
 const cardStyle: React.CSSProperties = { background: "white", border: "1px solid #e3ded2", borderRadius: 8, padding: 20 };
 
-export default async function ParentChildProfilePage({ params }: { params: { id: string } }) {
+export default async function ParentChildProfilePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { player, child } = await requireOwnedChild(params.id);
 
   const notes = await prisma.progressNote.findMany({

@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { updateTeam } from "../../actions";
 import { notFound } from "next/navigation";
 
-export default async function EditTeamPage({ params }: { params: { id: string } }) {
+export default async function EditTeamPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const team = await prisma.team.findUnique({ where: { id: params.id } });
   if (!team) return notFound();
 

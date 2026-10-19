@@ -14,7 +14,8 @@ const STATUS_OPTIONS = [
   { value: "INJURED", label: "Injured" },
 ];
 
-export default async function LogAttendancePage({ params }: { params: { eventId: string } }) {
+export default async function LogAttendancePage(props: { params: Promise<{ eventId: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

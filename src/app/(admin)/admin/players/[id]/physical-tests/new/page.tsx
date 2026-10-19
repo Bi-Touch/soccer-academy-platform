@@ -9,11 +9,12 @@ import { TEST_PROTOCOLS } from "@/lib/dataCollectionGuide";
 import { playerName } from "@/lib/playerDisplay";
 import { ProtocolHelp } from "@/components/ProtocolHelp";
 
-export default async function NewPhysicalTestPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function NewPhysicalTestPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

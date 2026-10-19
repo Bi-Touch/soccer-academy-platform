@@ -17,11 +17,12 @@ function plural(count: number, word: string) {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
-export default async function AdminTeamsPage({
-  searchParams,
-}: {
-  searchParams: { deleteBlocked?: string; events?: string; players?: string };
-}) {
+export default async function AdminTeamsPage(
+  props: {
+    searchParams: Promise<{ deleteBlocked?: string; events?: string; players?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const teams = await prisma.team.findMany({ include: { players: true } });
 
   // Set by deleteTeam when a team could not be removed. The name is only displayed, never trusted.
