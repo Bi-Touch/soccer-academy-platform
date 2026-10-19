@@ -58,7 +58,6 @@ marginBottom: 4,
 {value?.trim() || "Not provided"} </div> </div>
 ))} </div>
 
-```
       <div
         style={{
           background: "white",
@@ -95,7 +94,5 @@ marginBottom: 4,
     </>
   )}
 </ChildPageShell>
-```
-
 );
 }
