@@ -384,6 +384,9 @@ model PlayerHealthProfile {
   conditions  String? // encrypted
   medications String? // encrypted
 
+  // Free-text medical notes imported from the registration form on approval.
+  notes String? // encrypted
+
   doctorName    String?
   doctorPhone   String?
   insuranceInfo String? // encrypted
