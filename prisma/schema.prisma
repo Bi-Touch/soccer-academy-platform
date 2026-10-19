@@ -17,8 +17,10 @@ enum Role {
   ADMIN
   COACH
   ANALYST
-  PARENT // NEW: parent/guardian login (one login per guardian)
+  PARENT // parent/guardian login (one login per guardian)
   PLAYER
+  SAFEGUARDING_LEAD // NEW: Designated Safeguarding Lead (and named deputy)
+  MEDICAL_OFFICER // NEW: full access to player health records
 }
 
 enum Sex {
@@ -69,11 +71,12 @@ model User {
   createdAt           DateTime             @default(now())
   player              Player?
   coach               Coach?
-  parentGuardian      ParentGuardian? // NEW: set when role = PARENT
+  parentGuardian      ParentGuardian? // set when role = PARENT
   emailNotifications  Boolean              @default(true)
   pushNotifications   Boolean              @default(false)
   pushSubscriptions   PushSubscription[]
   passwordResetTokens PasswordResetToken[]
+  staffClearances     StaffClearance[] // NEW: vetting and training records
 }
 
 model PushSubscription {
@@ -89,22 +92,22 @@ model PushSubscription {
 model Player {
   id String @id @default(cuid())
 
-  // NEW: name lives on Player itself so a player without a login
+  // Name lives on Player itself so a player without a login
   // (registered by a parent/guardian) still has a permanent name.
   // Nullable until backfilled from user.name for existing rows.
   name String?
 
-  // CHANGED: optional — parent-registered players have no login of their own.
+  // Optional — parent-registered players have no login of their own.
   user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String? @unique
 
-  // NEW: ongoing parent/guardian relationship (the registration record
+  // Ongoing parent/guardian relationship (the registration record
   // is only the onboarding/audit trail, not the access-control link).
   parentGuardian   ParentGuardian? @relation(fields: [parentGuardianId], references: [id])
   parentGuardianId String?
 
   dateOfBirth DateTime?
-  sex         Sex? // NEW: required for benchmark scoring (nullable until backfilled)
+  sex         Sex? // required for benchmark scoring (nullable until backfilled)
   position    String?
   shirtNumber Int?
   photoUrl    String?
@@ -121,6 +124,13 @@ model Player {
   matchPerformances  MatchPerformance[]
   injuryRecords      InjuryRecord[]
   videos             Video[]
+  galleryPhotos      GalleryPhoto[] // NEW: photos this player appears in
+
+  // NEW: privacy, health and safeguarding
+  consents             PlayerConsent[]
+  healthProfile        PlayerHealthProfile?
+  emergencyContacts    EmergencyContact[]
+  safeguardingConcerns SafeguardingConcern[]
 }
 
 model Coach {
@@ -147,7 +157,7 @@ model Team {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Registration, guardians, consent  (NEW)
+// Registration, guardians, consent
 // ─────────────────────────────────────────────────────────────
 
 model ParentGuardian {
@@ -163,7 +173,11 @@ model ParentGuardian {
   phone        String
   email        String
   address      String?
-  idNumber     String?
+
+  // CHANGED: sensitive. Only collect if you have a stated purpose (e.g. verifying
+  // who collects a child). Encrypt at application level, restrict who can read
+  // it, and never show it in lists or the review screen. Otherwise remove.
+  idNumber String?
 
   players       Player[]
   registrations PlayerRegistration[]
@@ -190,9 +204,14 @@ model PlayerRegistration {
   previousAcademy String?
 
   // Emergency / medical
-  emergencyName  String?
-  emergencyPhone String?
-  medicalNotes   String?
+  emergencyName         String?
+  emergencyPhone        String?
+  emergencyRelationship String? // NEW: copied into EmergencyContact on approval
+
+  // CHANGED: sensitive health data. Encrypt at application level. On approval,
+  // move it into PlayerHealthProfile and clear this column so health data lives
+  // in one protected place with its own retention rules.
+  medicalNotes String?
 
   status RegistrationStatus @default(PENDING)
 
@@ -211,15 +230,21 @@ model PlayerRegistration {
   @@index([parentGuardianId])
 }
 
+/// What the guardian submitted at registration (an evidence snapshot).
+/// Ongoing consent state lives in PlayerConsent, which is seeded from this
+/// record on approval and changes by appending rows afterwards.
 model ConsentRecord {
   id String @id @default(cuid())
 
   registrationId String             @unique
   registration   PlayerRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 
-  // Required
+  // Required acknowledgements
   dataProcessing Boolean
   statistics     Boolean
+
+  // NEW: required safeguarding authorisation (not an optional consent)
+  emergencyTreatmentAuthorised Boolean @default(false)
 
   // Optional media
   photography    Boolean
@@ -227,22 +252,307 @@ model ConsentRecord {
   publicMedia    Boolean
 
   // Football development / sharing
-  localScouting     Boolean
+  localScouting     Boolean // local (Kenyan) academies, clubs and scouts
   overseasAcademies Boolean
   overseasClubs     Boolean
-  scouts            Boolean
-  agents            Boolean
+
+  // LEGACY: the original form did not say local or overseas for these two.
+  // Treat old ticks as LOCAL ONLY until the parent reconfirms.
+  // New registrations write the explicit fields below instead.
+  scouts Boolean @default(false)
+  agents Boolean @default(false)
+
+  // NEW: explicit local / overseas split for scouts and agents
+  localAgents    Boolean @default(false)
+  overseasScouts Boolean @default(false)
+  overseasAgents Boolean @default(false)
+
+  // NEW: other optional consents
+  healthData              Boolean @default(false)
+  marketingCommunications Boolean @default(false)
 
   // Parent declaration
   guardianDeclaration Boolean
 
-  consentVersion String
+  consentVersion String // form version
+  policyVersion  String? // NEW: privacy policy version accepted
   consentedAt    DateTime
 
+  // Disclose in the privacy policy and apply a retention period.
   ipAddress String?
   userAgent String?
 
   createdAt DateTime @default(now())
+}
+
+enum ConsentType {
+  PHOTOGRAPHY
+  VIDEO
+  PUBLIC_MEDIA
+  SCOUTING_LOCAL // local academies, clubs and scouts
+  AGENTS_LOCAL
+  SCOUTING_OVERSEAS_ACADEMIES
+  SCOUTING_OVERSEAS_CLUBS
+  SCOUTING_OVERSEAS_SCOUTS
+  SCOUTING_OVERSEAS_AGENTS
+  HEALTH_DATA
+  MARKETING_COMMUNICATIONS
+}
+
+enum ConsentGivenBy {
+  GUARDIAN
+  PLAYER // once the player is 18 or older
+}
+
+enum ConsentSource {
+  REGISTRATION
+  PARENT_DASHBOARD
+  PLAYER_AT_18
+  ADMIN_ON_BEHALF // e.g. paper form; record who entered it in recordedById
+}
+
+/// Append-only ledger of consent decisions. Never update or delete rows:
+/// a change (including a withdrawal) is a new row.
+/// Current state = latest row per (playerId, type). Anything not recorded = no consent.
+///
+/// Seeding from ConsentRecord on approval:
+///   localScouting + scouts -> SCOUTING_LOCAL, agents + localAgents -> AGENTS_LOCAL,
+///   overseasAcademies / overseasClubs / overseasScouts / overseasAgents -> matching
+///   SCOUTING_OVERSEAS_*. Legacy scouts/agents ticks never grant overseas sharing.
+///
+/// Current state query (Postgres):
+///   SELECT DISTINCT ON ("playerId", "type") * FROM "PlayerConsent"
+///   ORDER BY "playerId", "type", "createdAt" DESC;
+model PlayerConsent {
+  id       String @id @default(cuid())
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId String
+
+  type    ConsentType
+  granted Boolean
+
+  givenById   String // ParentGuardian id, or Player id when givenByRole = PLAYER
+  givenByRole ConsentGivenBy
+  source      ConsentSource
+
+  formVersion    String
+  policyVersion  String
+  consentRecordId String? // registration snapshot this came from, if any
+  recordedById   String? // staff user, when source = ADMIN_ON_BEHALF
+
+  createdAt DateTime @default(now())
+
+  @@index([playerId, type, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Website cookie consent evidence (NEW)
+// ─────────────────────────────────────────────────────────────
+
+/// Written by /api/consent-log. No names or contact details. visitorId is a
+/// random id generated in the browser. Server time is the record of truth.
+model CookieConsentLog {
+  id            String    @id @default(cuid())
+  visitorId     String
+  analytics     Boolean
+  marketing     Boolean
+  externalMedia Boolean
+  policyVersion String
+  action        String // accept_all | reject_all | custom
+  clientTime    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([visitorId, createdAt])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Health records (NEW — sensitive personal data)
+// ─────────────────────────────────────────────────────────────
+
+/// Collect only what is needed to keep the player safe at training.
+/// Requires HEALTH_DATA consent. Fields marked "encrypted" should be encrypted
+/// at application level (e.g. AES-GCM with a key held outside the database).
+/// Coaches should see a limited view (allergies, emergency treatment
+/// authorisation, emergency contacts), not the full profile.
+model PlayerHealthProfile {
+  id       String @id @default(cuid())
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId String @unique
+
+  allergies   String? // encrypted
+  conditions  String? // encrypted
+  medications String? // encrypted
+
+  doctorName    String?
+  doctorPhone   String?
+  insuranceInfo String? // encrypted
+
+  emergencyTreatmentAuthorised Boolean   @default(false)
+  authorisedAt                 DateTime?
+
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+}
+
+model EmergencyContact {
+  id           String  @id @default(cuid())
+  player       Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId     String
+  name         String
+  relationship String
+  phone        String
+  isPrimary    Boolean @default(false)
+
+  @@index([playerId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Safeguarding (NEW)
+// ─────────────────────────────────────────────────────────────
+
+enum ConcernCategory {
+  PHYSICAL
+  EMOTIONAL
+  SEXUAL
+  NEGLECT
+  ONLINE
+  BULLYING
+  CONDUCT_BY_STAFF
+  OTHER
+}
+
+enum ConcernStatus {
+  OPEN
+  UNDER_REVIEW
+  REFERRED_EXTERNAL // e.g. police or children's services
+  CLOSED
+}
+
+/// Visible only to SAFEGUARDING_LEAD (and a named deputy). Not visible to
+/// parents, coaches or general admins, and never shown in lists, search or
+/// dashboards. The legal basis for processing is safeguarding duty, not
+/// consent, so a parent cannot withdraw it. Add a retention rule with legal advice.
+model SafeguardingConcern {
+  id String @id @default(cuid())
+
+  // Restrict: a player with a safeguarding record cannot simply be deleted.
+  // Handle erasure requests through the safeguarding lead and a lawyer.
+  player   Player? @relation(fields: [playerId], references: [id], onDelete: Restrict)
+  playerId String? // may concern a group or the environment
+
+  reportedById String
+  category     ConcernCategory
+  description  String // encrypted
+  status       ConcernStatus   @default(OPEN)
+  assignedToId String? // Designated Safeguarding Lead
+  outcome      String? // encrypted
+
+  createdAt DateTime  @default(now())
+  closedAt  DateTime?
+
+  actions SafeguardingAction[]
+
+  @@index([status, createdAt])
+  @@index([playerId])
+}
+
+model SafeguardingAction {
+  id        String              @id @default(cuid())
+  concern   SafeguardingConcern @relation(fields: [concernId], references: [id], onDelete: Cascade)
+  concernId String
+  actorId   String
+  note      String // encrypted
+  createdAt DateTime            @default(now())
+
+  @@index([concernId, createdAt])
+}
+
+enum ClearanceType {
+  CERTIFICATE_OF_GOOD_CONDUCT
+  SAFEGUARDING_TRAINING
+  FIRST_AID
+  COACHING_LICENCE
+  CODE_OF_CONDUCT_SIGNED
+}
+
+/// Vetting and training for every adult who works with players.
+/// Block squad assignment while a required item is missing or expired.
+model StaffClearance {
+  id           String        @id @default(cuid())
+  user         User          @relation(fields: [userId], references: [id])
+  userId       String
+  type         ClearanceType
+  issuedAt     DateTime
+  expiresAt    DateTime?
+  documentRef  String? // storage path, not the document itself
+  verifiedById String?
+  createdAt    DateTime      @default(now())
+
+  @@index([userId, type])
+  @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Privacy compliance (NEW)
+// ─────────────────────────────────────────────────────────────
+
+enum DataRequestType {
+  ACCESS
+  CORRECTION
+  DELETION
+  RESTRICTION
+  OBJECTION
+  WITHDRAW_CONSENT
+}
+
+enum DataRequestStatus {
+  RECEIVED
+  IN_PROGRESS
+  COMPLETED
+  REFUSED // record the reason in notes
+}
+
+/// Rights requests from parents/guardians (or players at 18+).
+/// Set dueAt from the response time promised in the privacy policy.
+model DataSubjectRequest {
+  id            String            @id @default(cuid())
+  type          DataRequestType
+  status        DataRequestStatus @default(RECEIVED)
+  playerId      String?
+  requestedById String? // ParentGuardian or Player id
+  receivedAt    DateTime          @default(now())
+  dueAt         DateTime?
+  completedAt   DateTime?
+  handledById   String?
+  notes         String?
+
+  @@index([status, dueAt])
+}
+
+enum BreachStatus {
+  OPEN
+  CONTAINED
+  REPORTED
+  CLOSED
+}
+
+/// Track incidents so the regulator and affected families can be notified
+/// within the required time. Do not store the leaked data itself here.
+model DataBreachIncident {
+  id                 String       @id @default(cuid())
+  detectedAt         DateTime
+  description        String
+  dataTypes          String? // e.g. "contact details, photos"
+  affectedCount      Int?
+  status             BreachStatus @default(OPEN)
+  containedAt        DateTime?
+  reportedToOdpcAt   DateTime?
+  familiesNotifiedAt DateTime?
+  handledById        String?
+  createdAt          DateTime     @default(now())
+
+  @@index([status, detectedAt])
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -298,6 +608,11 @@ model GalleryPhoto {
   team      Team?    @relation(fields: [teamId], references: [id])
   teamId    String?
   createdAt DateTime @default(now())
+
+  // NEW: only show publicly when every tagged player has PUBLIC_MEDIA consent
+  // (and PHOTOGRAPHY). Check this in the API, not just in the UI.
+  isPublic Boolean  @default(false)
+  players  Player[]
 }
 
 model ContactSubmission {
@@ -317,8 +632,12 @@ model Video {
   description  String?
   url          String
   thumbnailUrl String?
-  players Player[]
+  players      Player[]
   createdAt    DateTime @default(now())
+
+  // NEW: only show publicly when every tagged player has PUBLIC_MEDIA consent
+  // (and VIDEO). Check this in the API, not just in the UI.
+  isPublic Boolean @default(false)
 }
 
 model NewsPost {
@@ -390,7 +709,7 @@ model PhysicalTest {
   playerId String
   testedAt DateTime             @default(now())
   testedBy String?
-  ageGroup String? // NEW: age group snapshot at test time (e.g. "U13")
+  ageGroup String? // age group snapshot at test time (e.g. "U13")
   results  PhysicalTestResult[]
 
   @@index([playerId, testedAt])
@@ -401,12 +720,12 @@ model PhysicalTestResult {
   test     PhysicalTest @relation(fields: [testId], references: [id], onDelete: Cascade)
   testId   String
   metric   String
-  testCode String? // NEW: stable code, e.g. "10M_SPRINT", "CMJ", "YOYO_IR1"
+  testCode String? // stable code, e.g. "10M_SPRINT", "CMJ", "YOYO_IR1"
   value    Float
   unit     String
 
-  score            Float? // NEW: 0–100 normalized score (null until a benchmark exists)
-  benchmarkVersion String? // NEW: which BenchmarkConfig version produced the score
+  score            Float? // 0–100 normalized score (null until a benchmark exists)
+  benchmarkVersion String? // which BenchmarkConfig version produced the score
 
   @@unique([testId, metric])
   @@unique([testId, testCode])
@@ -487,12 +806,15 @@ enum InjuryStatus {
   RECOVERED
 }
 
+/// Health data. Encrypt description and treatment at application level and
+/// restrict reads to coaches (summary only), MEDICAL_OFFICER and ADMIN.
 model InjuryRecord {
   id                 String       @id @default(cuid())
   player             Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
   playerId           String
   injuryType         String
-  description        String?
+  description        String? // encrypted
+  treatment          String? // NEW: encrypted
   dateOccurred       DateTime
   expectedReturnDate DateTime?
   actualReturnDate   DateTime?
@@ -508,6 +830,10 @@ model InjuryRecord {
 // Audit Logs
 // ─────────────────────────────────────────────────────────────
 
+/// Log reads as well as writes for health, safeguarding, consent, ID numbers
+/// and scouting shares (use action values like HEALTH_VIEW, SAFEGUARDING_VIEW,
+/// CONSENT_CHANGE, SCOUTING_SHARE). Store metadata only: never put the
+/// sensitive content itself in summary or changes.
 model AuditLog {
   id         String   @id @default(cuid())
   createdAt  DateTime @default(now())
@@ -517,6 +843,8 @@ model AuditLog {
   action     String
   entityType String?
   entityId   String?
+  playerId   String? // NEW: lets you answer "who accessed this player's data?"
+  reason     String? // NEW: required when viewing safeguarding records
   summary    String?
   changes    Json?
   ip         String?
@@ -525,4 +853,5 @@ model AuditLog {
   @@index([actorId, createdAt])
   @@index([entityType, entityId])
   @@index([action])
+  @@index([playerId, createdAt])
 }

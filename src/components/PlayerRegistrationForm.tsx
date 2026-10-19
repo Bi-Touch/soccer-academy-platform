@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { submitPlayerRegistration } from "@/app/register/player/actions";
 import { EMPTY_REGISTRATION, type RegistrationFormData } from "@/lib/registrationTypes";
 import { GuardianStep } from "./player-registration/GuardianStep";
-import { ConsentStep } from "./player-registration/ConsentStep";
 import { PlayerStep } from "./player-registration/PlayerStep";
+import { ConsentStep } from "./player-registration/ConsentStep";
 import { ReviewStep } from "./player-registration/ReviewStep";
 
-const STEPS = ["Guardian", "Consent", "Player", "Review"] as const;
+// Player comes before Consent so the consent step can rely on the date of birth.
+const STEPS = ["Guardian", "Player", "Consent", "Review"] as const;
 
 export default function PlayerRegistrationForm() {
   const [step, setStep] = useState(0);
@@ -21,6 +22,11 @@ export default function PlayerRegistrationForm() {
   function update(patch: Partial<RegistrationFormData>) {
     setData((d) => ({ ...d, ...patch }));
   }
+
+  // The error banner is at the top of the form, but Submit is at the bottom.
+  useEffect(() => {
+    if (error) window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [error]);
 
   function handleSubmit() {
     setError(null);
@@ -103,16 +109,25 @@ export default function PlayerRegistrationForm() {
       </div>
 
       {error && (
-        <div style={{ background: "#fdecec", border: "1px solid var(--card-red)", borderRadius: 8, padding: 16, marginBottom: 20, color: "var(--card-red)", fontSize: "0.9rem" }}>
+        <div
+          role="alert"
+          style={{ background: "#fdecec", border: "1px solid var(--card-red)", borderRadius: 8, padding: 16, marginBottom: 20, color: "var(--card-red)", fontSize: "0.9rem" }}
+        >
           {error}
         </div>
       )}
 
       {step === 0 && <GuardianStep data={data} update={update} onNext={() => setStep(1)} />}
-      {step === 1 && <ConsentStep data={data} update={update} onNext={() => setStep(2)} onBack={() => setStep(0)} />}
-      {step === 2 && <PlayerStep data={data} update={update} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
+      {step === 1 && <PlayerStep data={data} update={update} onNext={() => setStep(2)} onBack={() => setStep(0)} />}
+      {step === 2 && <ConsentStep data={data} update={update} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
       {step === 3 && (
-        <ReviewStep data={data} onBack={() => setStep(2)} onSubmit={handleSubmit} submitting={pending} />
+        <ReviewStep
+          data={data}
+          onBack={() => setStep(2)}
+          onEdit={(s) => setStep(s)}
+          onSubmit={handleSubmit}
+          submitting={pending}
+        />
       )}
     </div>
   );

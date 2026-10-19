@@ -1,15 +1,40 @@
-
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
 import {
-  CONSENT_CHANGED_EVENT,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import {
   OPEN_COOKIE_SETTINGS_EVENT,
-  defaultPreferences,
+  acceptAll,
+  defaultChoices,
   getStoredConsent,
+  needsConsentPrompt,
+  rejectAll,
   saveConsent,
-  type ConsentPreferences,
+  subscribeConsent,
 } from "@/lib/consent";
+
+type Choices = {
+  analytics: boolean;
+  marketing: boolean;
+  externalMedia: boolean;
+};
+
+/** Saved choices when still valid, otherwise everything off. */
+function currentChoices(): Choices {
+  const stored = getStoredConsent();
+  if (!stored || needsConsentPrompt()) return { ...defaultChoices };
+
+  return {
+    analytics: stored.analytics,
+    marketing: stored.marketing,
+    externalMedia: stored.externalMedia,
+  };
+}
 
 const buttonStyle: CSSProperties = {
   border: "1px solid #d1d5db",
@@ -62,67 +87,103 @@ export default function CookieConsent() {
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
-  const [preferences, setPreferences] =
-    useState<ConsentPreferences>(defaultPreferences);
+  const [choices, setChoices] = useState<Choices>({ ...defaultChoices });
 
+  const dialogRef = useRef<HTMLElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  const openSettings = useCallback(() => {
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    setChoices(currentChoices());
+    setManageOpen(true);
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    setChoices(currentChoices());
+    setManageOpen(false);
+    returnFocusRef.current?.focus?.();
+  }, []);
+
+  // Initial state, plus reacting to changes in this tab and other tabs.
   useEffect(() => {
-    const stored = getStoredConsent();
-
-    if (stored) {
-      setPreferences(stored);
-      setVisible(false);
-    } else {
-      setPreferences(defaultPreferences);
-      setVisible(true);
+    function sync() {
+      setVisible(needsConsentPrompt());
+      setChoices(currentChoices());
     }
 
+    sync();
     setReady(true);
 
-    function openSettings() {
-      setPreferences(getStoredConsent() ?? defaultPreferences);
-      setManageOpen(true);
-    }
-
-    function syncPreferences() {
-      const storedPreferences = getStoredConsent();
-
-      if (storedPreferences) {
-        setPreferences(storedPreferences);
-        setVisible(false);
-      } else {
-        setPreferences(defaultPreferences);
-        setVisible(true);
-      }
-    }
-
     window.addEventListener(OPEN_COOKIE_SETTINGS_EVENT, openSettings);
-    window.addEventListener(CONSENT_CHANGED_EVENT, syncPreferences);
+    const unsubscribe = subscribeConsent(sync);
 
     return () => {
       window.removeEventListener(OPEN_COOKIE_SETTINGS_EVENT, openSettings);
-      window.removeEventListener(CONSENT_CHANGED_EVENT, syncPreferences);
+      unsubscribe();
     };
-  }, []);
+  }, [openSettings]);
 
-  function openSettings() {
-    setPreferences(getStoredConsent() ?? defaultPreferences);
-    setManageOpen(true);
-  }
+  // Dialog: Escape to close, keep Tab inside, lock page scroll.
+  useEffect(() => {
+    if (!manageOpen) return;
 
-  function savePreferences(
-    analytics: boolean,
-    marketing: boolean,
-    externalMedia: boolean
-  ) {
-    const next = saveConsent({ analytics, marketing, externalMedia });
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.focus();
 
-    setPreferences(next);
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeSettings();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const root = dialogRef.current;
+      if (!root) return;
+
+      const focusable = root.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled])'
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && (active === first || active === root)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [manageOpen, closeSettings]);
+
+  function handleAcceptAll() {
+    acceptAll();
     setVisible(false);
     setManageOpen(false);
   }
 
-  function cancelSettings() {
-    setPreferences(getStoredConsent() ?? defaultPreferences);
+  function handleRejectAll() {
+    rejectAll();
+    setVisible(false);
+    setManageOpen(false);
+  }
+
+  function handleSaveChoices() {
+    saveConsent(choices, "custom");
+    setVisible(false);
     setManageOpen(false);
   }
 
@@ -148,6 +209,10 @@ export default function CookieConsent() {
         .ko-cookie input:focus-visible {
           outline: 3px solid #d4a72c;
           outline-offset: 3px;
+        }
+
+        .ko-cookie-dialog:focus {
+          outline: none;
         }
 
         .ko-cookie-trigger {
@@ -347,7 +412,8 @@ export default function CookieConsent() {
                   functions. With your permission, we may also use analytics,
                   advertising technologies, and external media such as YouTube
                   and Vimeo. You can reject optional categories or change your
-                  choices at any time. Read our{" "}
+                  choices at any time. We will ask again after 12 months or if
+                  our policy changes. Read our{" "}
                   <a
                     href="/privacy-policy"
                     style={{
@@ -364,10 +430,11 @@ export default function CookieConsent() {
               </div>
 
               <div className="ko-cookie-actions">
+                {/* Reject and Accept carry equal visual weight on purpose. */}
                 <button
                   type="button"
-                  style={secondaryButtonStyle}
-                  onClick={() => savePreferences(false, false, false)}
+                  style={primaryButtonStyle}
+                  onClick={handleRejectAll}
                 >
                   Reject Non-Essential
                 </button>
@@ -383,7 +450,7 @@ export default function CookieConsent() {
                 <button
                   type="button"
                   style={primaryButtonStyle}
-                  onClick={() => savePreferences(true, true, true)}
+                  onClick={handleAcceptAll}
                 >
                   Accept All
                 </button>
@@ -416,9 +483,7 @@ export default function CookieConsent() {
               <circle cx="12" cy="16" r="1" />
               <circle cx="7.5" cy="8" r="1" />
             </svg>
-            <span className="ko-cookie-trigger-label">
-              Cookie Settings
-            </span>
+            <span className="ko-cookie-trigger-label">Cookie Settings</span>
           </button>
         )}
 
@@ -427,7 +492,7 @@ export default function CookieConsent() {
             role="presentation"
             onClick={(event) => {
               if (event.target === event.currentTarget) {
-                cancelSettings();
+                closeSettings();
               }
             }}
             style={{
@@ -444,6 +509,8 @@ export default function CookieConsent() {
             }}
           >
             <section
+              ref={dialogRef}
+              tabIndex={-1}
               role="dialog"
               aria-modal="true"
               aria-labelledby="cookie-settings-title"
@@ -488,7 +555,7 @@ export default function CookieConsent() {
 
                 <button
                   type="button"
-                  onClick={cancelSettings}
+                  onClick={closeSettings}
                   aria-label="Close cookie preferences"
                   title="Close"
                   style={{
@@ -519,8 +586,8 @@ export default function CookieConsent() {
                   margin: "10px 0 18px",
                 }}
               >
-                Choose which optional categories you allow. Optional services
-                should not load unless their category is enabled.
+                Choose which optional categories you allow. You can change
+                these choices at any time using the Cookie Settings button.
               </p>
 
               <div style={categoryRowStyle}>
@@ -545,9 +612,9 @@ export default function CookieConsent() {
                   </span>
                   <input
                     type="checkbox"
-                    checked={preferences.analytics}
+                    checked={choices.analytics}
                     onChange={(event) =>
-                      setPreferences((current : ConsentPreferences) => ({
+                      setChoices((current) => ({
                         ...current,
                         analytics: event.target.checked,
                       }))
@@ -567,9 +634,9 @@ export default function CookieConsent() {
                   </span>
                   <input
                     type="checkbox"
-                    checked={preferences.marketing}
+                    checked={choices.marketing}
                     onChange={(event) =>
-                      setPreferences((current: ConsentPreferences) => ({
+                      setChoices((current) => ({
                         ...current,
                         marketing: event.target.checked,
                       }))
@@ -595,9 +662,9 @@ export default function CookieConsent() {
                   </span>
                   <input
                     type="checkbox"
-                    checked={preferences.externalMedia}
+                    checked={choices.externalMedia}
                     onChange={(event) =>
-                      setPreferences((current: ConsentPreferences) => ({
+                      setChoices((current) => ({
                         ...current,
                         externalMedia: event.target.checked,
                       }))
@@ -610,7 +677,7 @@ export default function CookieConsent() {
                 <button
                   type="button"
                   style={secondaryButtonStyle}
-                  onClick={cancelSettings}
+                  onClick={closeSettings}
                 >
                   Cancel
                 </button>
@@ -618,13 +685,7 @@ export default function CookieConsent() {
                 <button
                   type="button"
                   style={primaryButtonStyle}
-                  onClick={() =>
-                    savePreferences(
-                      preferences.analytics,
-                      preferences.marketing,
-                      preferences.externalMedia
-                    )
-                  }
+                  onClick={handleSaveChoices}
                 >
                   Save Preferences
                 </button>
