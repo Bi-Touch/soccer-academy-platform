@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export type ChildSectionKey = "profile" | "stats" | "reports" | "schedule" | "consent" | "videos";
+export type ChildSectionKey = "profile" | "stats" | "reports" | "schedule" | "consent" | "videos" | "health";
 
 function Svg({ children }: { children: React.ReactNode }) {
   return (
