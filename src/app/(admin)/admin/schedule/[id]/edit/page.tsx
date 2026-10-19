@@ -9,7 +9,8 @@ function toLocalInputValue(date: Date) {
   return local.toISOString().slice(0, 16);
 }
 
-export default async function EditEventPage({ params }: { params: { id: string } }) {
+export default async function EditEventPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

@@ -20,10 +20,15 @@ function sanitize(value: unknown): Prisma.InputJsonValue | undefined {
   return JSON.parse(JSON.stringify(value, (key, v) => (SENSITIVE_KEYS.has(key) ? "[redacted]" : v)));
 }
 
-function clientIp(): string | null {
+async function clientIp(): Promise<string | null> {
   try {
-    const h = headers();
-    return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? null;
+    const h = await headers();
+
+    return (
+      h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      h.get("x-real-ip") ??
+      null
+    );
   } catch {
     return null;
   }
@@ -41,7 +46,7 @@ export async function writeAudit(entry: AuditEntry): Promise<void> {
         entityId: entry.entityId ?? null,
         summary: entry.summary ?? null,
         changes: sanitize(entry.changes),
-        ip: clientIp(),
+        ip: await clientIp(),
       },
     });
   } catch (err) {

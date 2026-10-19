@@ -50,7 +50,8 @@ function parseDate(value: string | undefined, endOfDay: boolean) {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
-export default async function AuditLogPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function AuditLogPage(props: { searchParams: Promise<SearchParams> }) {
+  const searchParams = await props.searchParams;
   const user = await getSessionUser();
   if (!user || user.role !== "ADMIN") redirect("/admin");
 

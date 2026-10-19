@@ -4,7 +4,8 @@ import { BarChart } from "@/components/BarChart";
 import { ChartLegend } from "@/components/ChartLegend";
 import Link from "next/link";
 
-export default async function TeamTrainingReportPage({ searchParams }: { searchParams: { teamId?: string } }) {
+export default async function TeamTrainingReportPage(props: { searchParams: Promise<{ teamId?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

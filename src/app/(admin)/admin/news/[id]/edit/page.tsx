@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { updateNewsPost } from "../../actions";
 import { notFound } from "next/navigation";
 
-export default async function EditNewsPostPage({ params }: { params: { id: string } }) {
+export default async function EditNewsPostPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const post = await prisma.newsPost.findUnique({ where: { id: params.id } });
   if (!post) return notFound();
 

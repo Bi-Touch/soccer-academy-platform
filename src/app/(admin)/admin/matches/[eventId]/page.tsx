@@ -7,7 +7,8 @@ import { MatchStatsForm } from "@/components/MatchStatsForm";
 import { MATCH_STAT_KEYS } from "@/lib/matchStats";
 import { playerName } from "@/lib/playerDisplay";
 
-export default async function LogMatchStatsPage({ params }: { params: { eventId: string } }) {
+export default async function LogMatchStatsPage(props: { params: Promise<{ eventId: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

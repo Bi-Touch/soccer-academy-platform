@@ -7,7 +7,8 @@ import { getSessionUser, getAccessibleTeamIds } from "@/lib/permissions";
 import { EditPlayerTabs } from "@/components/EditPlayerTabs";
 import { playerName } from "@/lib/playerDisplay";
 
-export default async function EditPlayerPage({ params }: { params: { id: string } }) {
+export default async function EditPlayerPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await getSessionUser();
   const accessibleTeamIds = user ? await getAccessibleTeamIds(user) : null;
 

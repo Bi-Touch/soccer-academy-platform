@@ -9,14 +9,18 @@ export type FlashPassword = {
 };
 
 /**
- * Hands a temporary password from a server action to the next page without putting it in the URL.
+ * Passes a temporary password from a server action to the next page
+ * without putting it in the URL.
  *
- * The cookie is httpOnly (page scripts can't read it), sent only to the registrations pages,
- * only over HTTPS in production, never on cross-site requests, and expires after 2 minutes.
- * Unlike a query string it does not end up in browser history, the address bar, or request logs.
+ * The cookie is HTTP-only, restricted to registration pages, secure
+ * in production, and expires after two minutes.
  */
-export function setFlashPassword(value: FlashPassword) {
-  cookies().set(COOKIE_NAME, JSON.stringify(value), {
+export async function setFlashPassword(
+  value: FlashPassword
+): Promise<void> {
+  const cookieStore = await cookies();
+
+  cookieStore.set(COOKIE_NAME, JSON.stringify(value), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
@@ -25,13 +29,29 @@ export function setFlashPassword(value: FlashPassword) {
   });
 }
 
-/** Read the password handed over by the previous action, or null if there isn't one (or it expired). */
-export function readFlashPassword(): FlashPassword | null {
-  const raw = cookies().get(COOKIE_NAME)?.value;
+/**
+ * Reads the temporary password, returning null if the cookie is
+ * missing, invalid, or does not contain a string password.
+ */
+export async function readFlashPassword(): Promise<FlashPassword | null> {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(COOKIE_NAME)?.value;
+
   if (!raw) return null;
+
   try {
-    const parsed = JSON.parse(raw);
-    return typeof parsed?.password === "string" ? (parsed as FlashPassword) : null;
+    const parsed: unknown = JSON.parse(raw);
+
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "password" in parsed &&
+      typeof parsed.password === "string"
+    ) {
+      return parsed as FlashPassword;
+    }
+
+    return null;
   } catch {
     return null;
   }

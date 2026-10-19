@@ -7,11 +7,12 @@ const cardStyle: React.CSSProperties = { background: "#fff", border: "1px solid 
 const fieldLabel: React.CSSProperties = { fontSize: "0.8rem", fontWeight: 600, display: "flex", flexDirection: "column", gap: 4 };
 const fieldInput: React.CSSProperties = { padding: 10, border: "1px solid #d8d2c2", borderRadius: 6, minWidth: 150, fontWeight: 400 };
 
-export default async function AnalyticsPage({
-  searchParams,
-}: {
-  searchParams: { tab?: string; team?: string; from?: string; to?: string };
-}) {
+export default async function AnalyticsPage(
+  props: {
+    searchParams: Promise<{ tab?: string; team?: string; from?: string; to?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await requireViewer();
   const accessible = await getAccessibleTeamIds(user);
 

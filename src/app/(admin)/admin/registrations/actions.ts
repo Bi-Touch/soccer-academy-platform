@@ -93,7 +93,7 @@ export async function approveRegistration(registrationId: string) {
 
   // The password travels in a short-lived httpOnly cookie, not in the URL.
   if (tempPassword) {
-    setFlashPassword({ password: tempPassword, email: guardian.email, registrationId: registration.id });
+    await setFlashPassword({ password: tempPassword, email: guardian.email, registrationId: registration.id });
   }
   redirect(`/admin/registrations/${registration.id}`);
 }
@@ -181,6 +181,6 @@ export async function resetGuardianPassword(guardianId: string) {
   });
 
   // The password travels in a short-lived httpOnly cookie, not in the URL.
-  setFlashPassword({ password: tempPassword, email: guardian.email });
+  await setFlashPassword({ password: tempPassword, email: guardian.email });
   redirect("/admin/registrations");
 }

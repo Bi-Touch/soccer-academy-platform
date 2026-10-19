@@ -4,11 +4,12 @@ import Link from "next/link";
 import { createInjury } from "../../../../injuries/actions";
 import { playerName } from "@/lib/playerDisplay";
 
-export default async function NewInjuryPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function NewInjuryPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const player = await prisma.player.findUnique({
     where: { id: params.id },
     include: { user: true },

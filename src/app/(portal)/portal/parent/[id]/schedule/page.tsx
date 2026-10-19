@@ -33,7 +33,8 @@ function EventCard({ e, muted = false }: { e: EventItem; muted?: boolean }) {
   );
 }
 
-export default async function ParentChildSchedulePage({ params }: { params: { id: string } }) {
+export default async function ParentChildSchedulePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { player, child } = await requireOwnedChild(params.id);
 
   const events = player.teamId

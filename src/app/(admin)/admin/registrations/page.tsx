@@ -16,7 +16,7 @@ export default async function AdminRegistrationsPage() {
 
   // The password arrives in a short-lived httpOnly cookie set by resetGuardianPassword, not in the URL.
   // A cookie with a registrationId belongs to an approval and is shown on that registration's page instead.
-  const flash = readFlashPassword();
+  const flash = await readFlashPassword();
   const reset = flash && flash.email && !flash.registrationId ? flash : null;
 
   const rows = registrations.map((r) => ({
