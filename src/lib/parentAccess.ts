@@ -16,6 +16,9 @@ export async function requireOwnedChild(playerId: string) {
   if (!player || player.parentGuardianId !== guardian.id) notFound();
 
   return {
+    // user and guardian are returned so actions can record who made a change.
+    user,
+    guardian,
     player,
     child: {
       id: player.id,
