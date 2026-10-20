@@ -9,11 +9,37 @@ export type AuditEntry = {
   actor?: AuditActor | null;
   entityType?: string;
   entityId?: string;
+  /** The player the entry is about, so you can answer "who accessed this player's data?". */
+  playerId?: string | null;
+  /** Why the record was accessed. Required by your own rules for safeguarding views. */
+  reason?: string | null;
   summary?: string;
   changes?: unknown;
 };
 
-const SENSITIVE_KEYS = new Set(["password", "passwordHash", "token", "secret", "auth", "p256dh", "endpoint", "dateOfBirth", "email", "injuryType"]);
+// Values under these keys are replaced with "[redacted]" before anything is stored.
+// This is a safety net: sensitive content should never be passed in to begin with.
+const SENSITIVE_KEYS = new Set([
+  "password",
+  "passwordHash",
+  "token",
+  "secret",
+  "auth",
+  "p256dh",
+  "endpoint",
+  "dateOfBirth",
+  "email",
+  "injuryType",
+  // Health, identity and safeguarding content
+  "medicalNotes",
+  "allergies",
+  "conditions",
+  "medications",
+  "insuranceInfo",
+  "treatment",
+  "outcome",
+  "idNumber",
+]);
 
 function sanitize(value: unknown): Prisma.InputJsonValue | undefined {
   if (value === undefined || value === null) return undefined;
@@ -44,6 +70,8 @@ export async function writeAudit(entry: AuditEntry): Promise<void> {
         actorRole: entry.actor?.role ?? null,
         entityType: entry.entityType ?? null,
         entityId: entry.entityId ?? null,
+        playerId: entry.playerId ?? null,
+        reason: entry.reason ?? null,
         summary: entry.summary ?? null,
         changes: sanitize(entry.changes),
         ip: await clientIp(),
