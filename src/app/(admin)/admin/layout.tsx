@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { UserMenu } from "@/components/UserMenu";
@@ -13,9 +14,19 @@ import {
 
 const ROLE_LABEL: Record<string, string> = {
   PLAYER: "Player",
+  PARENT: "Parent",
   COACH: "Coach",
   ADMIN: "Admin",
+  ANALYST: "Analyst",
+  SAFEGUARDING_LEAD: "Safeguarding Lead",
+  MEDICAL_OFFICER: "Medical Officer",
 };
+
+// Roles that may see the staff area at all. This is a convenience so other people are sent
+// somewhere sensible. It is NOT the security boundary: every admin page and server action
+// must still call requireAdmin / requireStaff / requireViewer itself, because a layout is not
+// re-run on every navigation.
+const STAFF_AREA_ROLES = ["ADMIN", "COACH"];
 
 function NavGroup({
   id,
@@ -98,6 +109,16 @@ export default async function AdminLayout({
 }) {
   const session = await getServerSession(authOptions);
   const role = session?.user?.role;
+
+  // Send everyone who does not belong here somewhere sensible, instead of showing them the staff shell.
+  if (!session?.user) redirect("/login");
+  if (!role || !STAFF_AREA_ROLES.includes(role)) {
+    if (role === "PARENT") redirect("/portal/parent");
+    if (role === "PLAYER") redirect("/portal/dashboard");
+    if (role === "ANALYST") redirect("/portal/analyst");
+    redirect("/"); // e.g. safeguarding lead or medical officer, who have no staff screens yet
+  }
+
   const isAdmin = role === "ADMIN";
 
   return (
@@ -149,6 +170,7 @@ export default async function AdminLayout({
             {isAdmin && <NavLink href="/admin/teams">Teams</NavLink>}
             {isAdmin && <NavLink href="/admin/coaches">Coaches</NavLink>}
             <NavLink href="/admin/players">Players</NavLink>
+             {(isAdmin || role === "COACH") && <NavLink href="/admin/health">Health Records</NavLink>}
             <NavLink href="/admin/players/compare">Compare Players</NavLink>
           </NavGroup>
 
@@ -196,6 +218,7 @@ export default async function AdminLayout({
               firstHref="/admin/registrations"
             >
               <NavLink href="/admin/registrations">Registrations</NavLink>
+              <NavLink href="/admin/consent">Consent</NavLink>
               <NavLink href="/admin/analysts">Analysts</NavLink>
               <NavLink href="/admin/enquiries">Enquiries</NavLink>
               <NavLink href="/admin/audit">Audit Log</NavLink>

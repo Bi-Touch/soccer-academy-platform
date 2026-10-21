@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/permissions";
 import { sendRegistrationApprovedEmail, sendPlayerAddedEmail } from "@/lib/notifications";
 import { logAudit, diffFields } from "@/lib/audit";
 import { setFlashPassword } from "@/lib/flashPassword";
+import { HEALTH_CONTEXT, decryptField, encryptField } from "@/lib/healthCrypto";
 
 function generateTempPassword() {
   return crypto.randomBytes(6).toString("base64").replace(/[+/=]/g, "").slice(0, 10);
@@ -130,14 +131,14 @@ export async function approveRegistration(registrationId: string) {
       // (made before that consent existed) keep their notes on the registration
       // so an administrator can ask the parent to confirm, instead of silently
       // copying health information without consent.
-      const notes = registration.medicalNotes?.trim() || null;
+      // Stored encrypted on the registration; decrypted here only to move it into the health profile.
+      const notes = decryptField(registration.medicalNotes, HEALTH_CONTEXT.registrationNotes)?.trim() || null;
       const importNotes = Boolean(notes) && consent.healthData;
 
       await tx.playerHealthProfile.create({
         data: {
           playerId: player.id,
-          // TODO: encrypt before saving once the encryption helper exists.
-          notes: importNotes ? notes : null,
+          notes: importNotes ? encryptField(notes, HEALTH_CONTEXT.profileNotes) : null,
           emergencyTreatmentAuthorised: consent.emergencyTreatmentAuthorised,
           authorisedAt: consent.emergencyTreatmentAuthorised ? consent.consentedAt : null,
           updatedById: admin.id,

@@ -11,6 +11,7 @@ import {
 import { CONSENT_FORM_VERSION, PRIVACY_POLICY_VERSION } from "@/lib/privacyVersions";
 import { logAudit } from "@/lib/audit";
 import { isRateLimited } from "@/lib/rateLimit";
+import { HEALTH_CONTEXT, encryptField } from "@/lib/healthCrypto";
 
 const MAX_LENGTH = {
   name: 100,
@@ -166,6 +167,16 @@ export async function submitPlayerRegistration(
   const preferredFoot = ["LEFT", "RIGHT", "BOTH"].includes(f.preferredFoot) ? f.preferredFoot : null;
   const position = (POSITIONS as readonly string[]).includes(f.position) ? f.position : null;
 
+  // Medical notes are encrypted before they reach the database. If encryption is not set up the
+  // registration is refused with a clear message, rather than saving health data as plain text.
+  let encryptedMedicalNotes: string | null = null;
+  try {
+    encryptedMedicalNotes = encryptField(f.medicalNotes, HEALTH_CONTEXT.registrationNotes);
+  } catch (e) {
+    console.error("Could not encrypt medical notes:", e);
+    return { error: "We could not save the medical notes securely. Please try again later or contact the Academy." };
+  }
+
   // One transaction, so a failure never leaves a guardian record without a registration.
   // An existing ParentGuardian with the same email is reused so a parent registering a
   // second child doesn't end up with two guardian records (and, later, two logins).
@@ -203,8 +214,8 @@ export async function submitPlayerRegistration(
         emergencyName: f.emergencyName,
         emergencyPhone: f.emergencyPhone,
         emergencyRelationship: f.emergencyRelationship,
-        // Sensitive health data. Encrypt before saving once the encryption helper exists.
-        medicalNotes: f.medicalNotes || null,
+        // Sensitive health data, encrypted above.
+        medicalNotes: encryptedMedicalNotes,
         status: "PENDING",
         consent: {
           create: {

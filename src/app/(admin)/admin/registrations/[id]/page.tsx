@@ -5,6 +5,7 @@ import type { ConsentType } from "@prisma/client";
 import { requireAdmin } from "@/lib/permissions";
 import { readFlashPassword } from "@/lib/flashPassword";
 import { logAudit } from "@/lib/audit";
+import { HEALTH_CONTEXT, decryptField } from "@/lib/healthCrypto";
 import { formatDate } from "@/lib/dates";
 import { getCurrentConsents } from "@/lib/consentLedger";
 import { consentRowsFromRecord } from "@/lib/consentMapping";
@@ -59,8 +60,11 @@ export default async function RegistrationDetailPage(
       : Promise.resolve(0),
   ]);
 
+  // Stored encrypted. Decrypted only for this admin view.
+  const medicalNotes = decryptField(registration.medicalNotes, HEALTH_CONTEXT.registrationNotes);
+
   // Reading medical notes is a sensitive access, so it is recorded (metadata only, never the notes).
-  if (registration.medicalNotes) {
+  if (medicalNotes) {
     await logAudit({
       action: "registration.medicalNotes.view",
       entityType: "PlayerRegistration",
@@ -143,8 +147,8 @@ export default async function RegistrationDetailPage(
         <p>DOB: {formatDate(registration.dateOfBirth)}</p>
         <p>Position: {registration.position || "—"} &middot; Preferred foot: {registration.preferredFoot || "—"}</p>
         <p style={{ marginTop: 8, fontSize: "0.9rem" }}>Emergency contact: {emergencyContact || "—"}</p>
-        {registration.medicalNotes ? (
-          <p style={{ marginTop: 8, fontSize: "0.9rem", whiteSpace: "pre-wrap" }}>Medical notes: {registration.medicalNotes}</p>
+        {medicalNotes ? (
+          <p style={{ marginTop: 8, fontSize: "0.9rem", whiteSpace: "pre-wrap" }}>Medical notes: {medicalNotes}</p>
         ) : (
           <p style={{ marginTop: 8, fontSize: "0.9rem", opacity: 0.75 }}>
             Medical notes: {notesMoved > 0 ? "moved to the player's health profile" : "none provided"}

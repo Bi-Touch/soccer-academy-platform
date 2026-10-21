@@ -10,6 +10,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { consentRowsFromRecord } from "../src/lib/consentMapping";
+import { HEALTH_CONTEXT, decryptField, encryptField } from "../src/lib/healthCrypto";
 
 const prisma = new PrismaClient();
 const apply = process.argv.includes("--apply");
@@ -79,7 +80,7 @@ async function main() {
     // otherwise they stay on the registration for an administrator to follow up.
     const hasProfile = await prisma.playerHealthProfile.findUnique({ where: { playerId }, select: { id: true } });
     if (!hasProfile) {
-      const notes = reg.medicalNotes?.trim() || null;
+      const notes = decryptField(reg.medicalNotes, HEALTH_CONTEXT.registrationNotes)?.trim() || null;
       const importNotes = Boolean(notes) && consent.healthData;
       if (notes && !importNotes) notesNeedFollowUp += 1;
       profilesCreated += 1;
@@ -88,7 +89,7 @@ async function main() {
         await prisma.playerHealthProfile.create({
           data: {
             playerId,
-            notes: importNotes ? notes : null,
+            notes: importNotes ? encryptField(notes, HEALTH_CONTEXT.profileNotes) : null,
             emergencyTreatmentAuthorised: consent.emergencyTreatmentAuthorised,
             authorisedAt: consent.emergencyTreatmentAuthorised ? consent.consentedAt : null,
           },
