@@ -7,6 +7,7 @@ import { ReportTabs } from "@/components/ReportTabs";
 import { playerName } from "@/lib/playerDisplay";
 import { DOMAINS, DOMAIN_LABELS } from "@/lib/assessmentAttributes";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
+import { HEALTH_CONTEXT, decryptForDisplay } from "@/lib/healthCrypto";
 
 const cardStyle: React.CSSProperties = {
   background: "#fff",
@@ -419,7 +420,7 @@ async function renderInjuries(teamId: string) {
                       maxWidth: 280,
                     }}
                   >
-                    {injury.description ?? "—"}
+                    {decryptForDisplay(injury.description, HEALTH_CONTEXT.injuryDescription) ?? "—"}
                   </td>
 
                   <td style={{ padding: "10px 16px" }}>

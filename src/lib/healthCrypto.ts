@@ -34,6 +34,8 @@ export const HEALTH_CONTEXT = {
   profileNotes: "PlayerHealthProfile.notes",
   profileInsurance: "PlayerHealthProfile.insuranceInfo",
   registrationNotes: "PlayerRegistration.medicalNotes",
+  injuryDescription: "InjuryRecord.description",
+  injuryTreatment: "InjuryRecord.treatment",
 } as const;
 
 type KeyEntry = { id: string; key: Buffer };
@@ -102,6 +104,20 @@ export function decryptField(value: string | null | undefined, context: string):
   return Buffer.concat([decipher.update(Buffer.from(ciphertextB64, "base64")), decipher.final()]).toString("utf8");
 }
 
+/**
+ * For screens that list many records. Like decryptField, but if one value cannot be decrypted
+ * (wrong key, damaged data) it shows a placeholder and logs the problem instead of breaking the
+ * whole page.
+ */
+export function decryptForDisplay(value: string | null | undefined, context: string): string | null {
+  try {
+    return decryptField(value, context);
+  } catch (e) {
+    console.error("Health data could not be decrypted:", context, e instanceof Error ? e.message : e);
+    return "[could not be decrypted]";
+  }
+}
+
 /** True when the value was encrypted with an older key and should be re-encrypted. */
 export function needsRotation(value: string | null | undefined): boolean {
   if (!isEncrypted(value)) return false;
@@ -144,6 +160,48 @@ export function decryptProfile<T extends Record<ProfileSecretField, string | nul
   const copy = { ...profile };
   for (const field of PROFILE_SECRET_FIELDS) {
     copy[field] = decryptField(profile[field], PROFILE_CONTEXT[field]) as T[ProfileSecretField];
+  }
+  return copy;
+}
+
+/* ------------------------------------------------------------------ */
+/* InjuryRecord helpers                                                */
+/* ------------------------------------------------------------------ */
+
+// Only the free-text fields are encrypted. injuryType, dates and status stay readable so that
+// injury lists, filters, reports and analytics keep working.
+const INJURY_CONTEXT = {
+  description: HEALTH_CONTEXT.injuryDescription,
+  treatment: HEALTH_CONTEXT.injuryTreatment,
+} as const;
+
+export type InjurySecretField = keyof typeof INJURY_CONTEXT;
+export const INJURY_SECRET_FIELDS = Object.keys(INJURY_CONTEXT) as InjurySecretField[];
+
+export function injuryContext(field: InjurySecretField): string {
+  return INJURY_CONTEXT[field];
+}
+
+/**
+ * Encrypts the free-text fields of an injury record before it is written.
+ * Only the fields present in the input are returned, so it is safe to spread into
+ * both create and update data.
+ */
+export function encryptInjuryFields(
+  input: Partial<Record<InjurySecretField, string | null | undefined>>
+): Partial<Record<InjurySecretField, string | null>> {
+  const out: Partial<Record<InjurySecretField, string | null>> = {};
+  for (const field of INJURY_SECRET_FIELDS) {
+    if (field in input) out[field] = encryptField(input[field], INJURY_CONTEXT[field]);
+  }
+  return out;
+}
+
+/** Returns a copy of an injury record with its free-text fields decrypted. */
+export function decryptInjuryRecord<T extends Record<InjurySecretField, string | null>>(record: T): T {
+  const copy = { ...record };
+  for (const field of INJURY_SECRET_FIELDS) {
+    copy[field] = decryptField(record[field], INJURY_CONTEXT[field]) as T[InjurySecretField];
   }
   return copy;
 }

@@ -10,6 +10,7 @@ import { DOMAINS, DOMAIN_LABELS } from "@/lib/assessmentAttributes";
 import { PHYSICAL_TEST_METRICS } from "@/lib/physicalTests";
 import { MATCH_STAT_GROUPS } from "@/lib/matchStats";
 import { playerName } from "@/lib/playerDisplay";
+import { HEALTH_CONTEXT, decryptForDisplay } from "@/lib/healthCrypto";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { deletePhysicalTest } from "../physical-tests/actions";
 
@@ -539,7 +540,7 @@ async function renderInjuries(playerId: string) {
                       maxWidth: 280,
                     }}
                   >
-                    {injury.description ?? "—"}
+                    {decryptForDisplay(injury.description, HEALTH_CONTEXT.injuryDescription) ?? "—"}
                   </td>
 
                   <td style={{ padding: "10px 16px" }}>

@@ -8,15 +8,21 @@
  * Apply:                      npx tsx scripts/encrypt-existing-health-data.ts --apply
  * After a key rotation:       npx tsx scripts/encrypt-existing-health-data.ts --apply --rotate
  *
+ * Injury records are only touched when you add --injuries. Do that ONLY after the injury pages
+ * have been updated to decrypt, otherwise they will show scrambled text:
+ *                             npx tsx scripts/encrypt-existing-health-data.ts --apply --injuries
+ *
  * Safe to run twice: values that are already encrypted are skipped. Each value is decrypted again
  * and compared before it is written, and nothing is ever printed except counts.
  */
 import { PrismaClient } from "@prisma/client";
 import {
   HEALTH_CONTEXT,
+  INJURY_SECRET_FIELDS,
   PROFILE_SECRET_FIELDS,
   decryptField,
   encryptField,
+  injuryContext,
   isEncrypted,
   needsRotation,
   profileContext,
@@ -25,6 +31,7 @@ import {
 const prisma = new PrismaClient();
 const apply = process.argv.includes("--apply");
 const rotate = process.argv.includes("--rotate");
+const injuries = process.argv.includes("--injuries");
 
 /** Returns the new stored value, or undefined when nothing needs to change. */
 function convert(value: string | null, context: string): string | undefined {
@@ -48,6 +55,8 @@ async function main() {
 
   let profileValues = 0;
   let registrationValues = 0;
+  let injuryValues = 0;
+  let injuryCount = 0;
 
   const profiles = await prisma.playerHealthProfile.findMany();
   for (const profile of profiles) {
@@ -75,12 +84,36 @@ async function main() {
     }
   }
 
+  if (injuries) {
+    const records = await prisma.injuryRecord.findMany({
+      select: { id: true, description: true, treatment: true },
+    });
+    injuryCount = records.length;
+    for (const record of records) {
+      const data: Record<string, string> = {};
+      for (const field of INJURY_SECRET_FIELDS) {
+        const next = convert(record[field], injuryContext(field));
+        if (next !== undefined) data[field] = next;
+      }
+      const count = Object.keys(data).length;
+      if (count > 0) {
+        injuryValues += count;
+        if (apply) await prisma.injuryRecord.update({ where: { id: record.id }, data });
+      }
+    }
+  }
+
   console.log(apply ? "APPLIED" : "DRY RUN (nothing written, add --apply to write)");
   console.log(`Health profiles checked:            ${profiles.length}`);
   console.log(`Profile values to (re)encrypt:      ${profileValues}`);
   console.log(`Registrations checked (with notes): ${registrations.length}`);
   console.log(`Registration notes to (re)encrypt:  ${registrationValues}`);
-  console.log("Injury records are not covered by this script yet.");
+  if (injuries) {
+    console.log(`Injury records checked:             ${injuryCount}`);
+    console.log(`Injury values to (re)encrypt:       ${injuryValues}`);
+  } else {
+    console.log("Injury records were not included (add --injuries once the injury pages decrypt).");
+  }
 }
 
 main()
