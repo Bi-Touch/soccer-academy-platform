@@ -26,7 +26,7 @@ const ROLE_LABEL: Record<string, string> = {
 // somewhere sensible. It is NOT the security boundary: every admin page and server action
 // must still call requireAdmin / requireStaff / requireViewer itself, because a layout is not
 // re-run on every navigation.
-const STAFF_AREA_ROLES = ["ADMIN", "COACH"];
+const STAFF_AREA_ROLES = ["ADMIN", "COACH", "ANALYST", "SAFEGUARDING_LEAD", "MEDICAL_OFFICER"];
 
 function NavGroup({
   id,
@@ -115,11 +115,16 @@ export default async function AdminLayout({
   if (!role || !STAFF_AREA_ROLES.includes(role)) {
     if (role === "PARENT") redirect("/portal/parent");
     if (role === "PLAYER") redirect("/portal/dashboard");
-    if (role === "ANALYST") redirect("/portal/analyst");
-    redirect("/"); // e.g. safeguarding lead or medical officer, who have no staff screens yet
+    redirect("/");
   }
 
   const isAdmin = role === "ADMIN";
+  const isSafeguardingLead = role === "SAFEGUARDING_LEAD";
+  const isMedicalOfficer = role === "MEDICAL_OFFICER";
+  // The safeguarding lead and the medical officer see only their own area, not the coaching screens.
+  const isCareRole = isSafeguardingLead || isMedicalOfficer;
+  const homeHref = isSafeguardingLead ? "/admin/safeguarding" : isMedicalOfficer ? "/admin/health" : "/admin";
+  const canRaiseConcern = isAdmin || role === "COACH" || isCareRole;
 
   return (
     <div className="admin-shell">
@@ -138,7 +143,7 @@ export default async function AdminLayout({
       <aside className="admin-sidebar">
         <div className="sidebar-top">
           <Link
-            href="/admin"
+            href={homeHref}
             className="sidebar-brand"
             aria-label="KickOasis staff dashboard"
           >
@@ -161,6 +166,34 @@ export default async function AdminLayout({
         </div>
 
         <nav className="admin-nav" aria-label="Admin navigation">
+          {isSafeguardingLead && (
+            <NavGroup
+              id="group-safeguarding"
+              label="Safeguarding"
+              icon={NAV_ICONS.shield}
+              firstHref="/admin/safeguarding"
+            >
+              <NavLink href="/admin/safeguarding">Concerns</NavLink>
+              <NavLink href="/admin/safeguarding/report">Raise a concern</NavLink>
+              <NavLink href="/admin/safeguarding/clearances">Staff Clearances</NavLink>
+              <NavLink href="/admin/safeguarding/access-log">Access Log</NavLink>
+            </NavGroup>
+          )}
+
+          {isMedicalOfficer && (
+            <NavGroup
+              id="group-medical"
+              label="Medical"
+              icon={NAV_ICONS.user}
+              firstHref="/admin/health"
+            >
+              <NavLink href="/admin/health">Health Records</NavLink>
+              <NavLink href="/admin/safeguarding/report">Raise a concern</NavLink>
+            </NavGroup>
+          )}
+
+          {!isCareRole && (
+          <>
           <NavGroup
             id="group-roster"
             label="Roster"
@@ -169,8 +202,9 @@ export default async function AdminLayout({
           >
             {isAdmin && <NavLink href="/admin/teams">Teams</NavLink>}
             {isAdmin && <NavLink href="/admin/coaches">Coaches</NavLink>}
+            {isAdmin && <NavLink href="/admin/analysts">Analysts</NavLink>}
             <NavLink href="/admin/players">Players</NavLink>
-             {(isAdmin || role === "COACH") && <NavLink href="/admin/health">Health Records</NavLink>}
+            {role === "COACH" && <NavLink href="/admin/health">Health Records</NavLink>}
             <NavLink href="/admin/players/compare">Compare Players</NavLink>
           </NavGroup>
 
@@ -219,18 +253,32 @@ export default async function AdminLayout({
             >
               <NavLink href="/admin/registrations">Registrations</NavLink>
               <NavLink href="/admin/consent">Consent</NavLink>
-              <NavLink href="/admin/analysts">Analysts</NavLink>
+              <NavLink href="/admin/health">Health Records</NavLink>
+              <NavLink href="/admin/safeguarding/clearances">Staff Clearances</NavLink>
+              <NavLink href="/admin/staff">Staff Accounts</NavLink>
               <NavLink href="/admin/enquiries">Enquiries</NavLink>
               <NavLink href="/admin/audit">Audit Log</NavLink>
             </NavGroup>
           )}
 
+          </>
+          )}
+
           <div className="sidebar-footer">
-            <FooterLink
-              href="/admin/guide"
-              label="Data Collection Guide"
-              icon={NAV_ICONS.book}
-            />
+            {canRaiseConcern && !isSafeguardingLead && !isMedicalOfficer && (
+              <FooterLink
+                href="/admin/safeguarding/report"
+                label="Raise a concern"
+                icon={NAV_ICONS.shield}
+              />
+            )}
+            {!isCareRole && (
+              <FooterLink
+                href="/admin/guide"
+                label="Data Collection Guide"
+                icon={NAV_ICONS.book}
+              />
+            )}
           </div>
         </nav>
       </aside>

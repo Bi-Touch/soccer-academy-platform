@@ -1,3 +1,4 @@
+
 import { cookies } from "next/headers";
 
 const COOKIE_NAME = "flash_temp_password";
@@ -12,19 +13,25 @@ export type FlashPassword = {
  * Passes a temporary password from a server action to the next page
  * without putting it in the URL.
  *
- * The cookie is HTTP-only, restricted to registration pages, secure
- * in production, and expires after two minutes.
+ * Staff credentials are restricted to /admin/staff.
+ * Registration credentials are restricted to /admin/registrations.
+ * The cookie is HTTP-only, secure in production, and expires after
+ * two minutes.
  */
 export async function setFlashPassword(
   value: FlashPassword
 ): Promise<void> {
   const cookieStore = await cookies();
 
+  const path = value.registrationId?.startsWith("staff:")
+    ? "/admin/staff"
+    : "/admin/registrations";
+
   cookieStore.set(COOKIE_NAME, JSON.stringify(value), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    path: "/admin/registrations",
+    path,
     maxAge: 120,
   });
 }

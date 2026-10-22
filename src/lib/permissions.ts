@@ -200,3 +200,32 @@ export async function requireGuardianOfPlayer(playerId: string): Promise<Session
   }
   return user;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Health records list, staff vetting
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * The health records list. Admins and medical officers see every player; coaches see only the
+ * players of their own teams (the page narrows the list, and requireHealthAccess limits what a
+ * coach can open to a summary).
+ */
+export async function requireHealthListAccess(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user || (user.role !== "ADMIN" && user.role !== "COACH" && user.role !== "MEDICAL_OFFICER")) {
+    throw new Error("Not authorized.");
+  }
+  return user;
+}
+
+/**
+ * Staff vetting and training overview. The safeguarding lead manages it; admins can view it
+ * (to know who may be placed with a squad) but cannot change it.
+ */
+export async function requireClearanceViewer(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user || (user.role !== "ADMIN" && user.role !== "SAFEGUARDING_LEAD")) {
+    throw new Error("Not authorized.");
+  }
+  return user;
+}

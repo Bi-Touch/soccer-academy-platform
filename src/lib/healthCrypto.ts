@@ -36,6 +36,9 @@ export const HEALTH_CONTEXT = {
   registrationNotes: "PlayerRegistration.medicalNotes",
   injuryDescription: "InjuryRecord.description",
   injuryTreatment: "InjuryRecord.treatment",
+  concernDescription: "SafeguardingConcern.description",
+  concernOutcome: "SafeguardingConcern.outcome",
+  concernNote: "SafeguardingAction.note",
 } as const;
 
 type KeyEntry = { id: string; key: Buffer };

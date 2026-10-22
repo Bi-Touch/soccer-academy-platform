@@ -1,6 +1,6 @@
 
 import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 const ADMIN_ONLY_PREFIXES = [
   "/admin/teams",
@@ -9,6 +9,9 @@ const ADMIN_ONLY_PREFIXES = [
   "/admin/enquiries",
   "/admin/gallery",
   "/admin/audit",
+  "/admin/registrations",
+  "/admin/consent",
+  "/admin/staff",
 ];
 
 const PLAYER_ONLY_PORTAL_PREFIXES = [
@@ -19,12 +22,50 @@ const PLAYER_ONLY_PORTAL_PREFIXES = [
   "/portal/leaderboard",
 ];
 
-function homeFor(role: string | undefined) {
-  if (role === "ANALYST") return "/analytics";
-  if (role === "PARENT") return "/portal/parent";
-  if (role === "ADMIN" || role === "COACH") return "/admin";
+const ADMIN_ROLES = ["ADMIN", "COACH"];
+const STAFF_ROLES = [
+  "ADMIN",
+  "COACH",
+  "ANALYST",
+  "SAFEGUARDING_LEAD",
+  "MEDICAL_OFFICER",
+];
 
-  return "/portal/dashboard";
+function homeFor(role: string | undefined): string {
+  switch (role) {
+    case "ADMIN":
+    case "COACH":
+      return "/admin";
+
+    case "ANALYST":
+      return "/analytics";
+
+    case "SAFEGUARDING_LEAD":
+      return "/admin/safeguarding";
+
+    case "MEDICAL_OFFICER":
+      return "/admin/health";
+
+    case "PARENT":
+      return "/portal/parent";
+
+    case "PLAYER":
+    default:
+      return "/portal/dashboard";
+  }
+}
+
+function isPathOrChild(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+function redirectHome(
+  req: NextRequest,
+  role: string | undefined
+) {
+  return NextResponse.redirect(
+    new URL(homeFor(role), req.url)
+  );
 }
 
 export default withAuth(
@@ -32,72 +73,86 @@ export default withAuth(
     const { pathname } = req.nextUrl;
     const role = req.nextauth.token?.role as string | undefined;
 
-    // Only administrators and coaches can access the admin area.
-    if (
-      pathname.startsWith("/admin") &&
-      role !== "ADMIN" &&
-      role !== "COACH"
-    ) {
-      return NextResponse.redirect(
-        new URL(homeFor(role), req.url)
-      );
+    /*
+     * ADMIN AREA
+     *
+     * Administrators and coaches can enter the staff area.
+     * Safeguarding leads and medical officers can enter only
+     * the areas assigned to their roles.
+     */
+    if (pathname.startsWith("/admin")) {
+      if (!role || !STAFF_ROLES.includes(role)) {
+        return redirectHome(req, role);
+      }
+
+      if (role === "SAFEGUARDING_LEAD") {
+        const allowed =
+          isPathOrChild(pathname, "/admin/safeguarding");
+
+        if (!allowed) {
+          return redirectHome(req, role);
+        }
+      }
+
+      if (role === "MEDICAL_OFFICER") {
+        const allowed =
+          isPathOrChild(pathname, "/admin/health") ||
+          pathname === "/admin/safeguarding/report";
+
+        if (!allowed) {
+          return redirectHome(req, role);
+        }
+      }
+
+      // Coaches cannot access administrator-only sections.
+      if (
+        role === "COACH" &&
+        ADMIN_ONLY_PREFIXES.some((prefix) =>
+          isPathOrChild(pathname, prefix)
+        )
+      ) {
+        return redirectHome(req, role);
+      }
+
+      return NextResponse.next();
     }
 
-    // Only administrators, coaches, and analysts can access analytics.
-    if (
-      pathname.startsWith("/analytics") &&
-      role !== "ADMIN" &&
-      role !== "COACH" &&
-      role !== "ANALYST"
-    ) {
-      return NextResponse.redirect(
-        new URL(homeFor(role), req.url)
-      );
+    /*
+     * ANALYTICS AREA
+     *
+     * Only administrators, coaches, and analysts may enter.
+     */
+    if (pathname.startsWith("/analytics")) {
+      if (
+        !["ADMIN", "COACH", "ANALYST"].includes(role ?? "")
+      ) {
+        return redirectHome(req, role);
+      }
+
+      return NextResponse.next();
     }
 
-    // Staff members should be redirected to the admin dashboard
-    // instead of accessing the player/parent portal.
-    if (
-      pathname.startsWith("/portal") &&
-      (role === "ADMIN" || role === "COACH")
-    ) {
-      return NextResponse.redirect(
-        new URL("/admin", req.url)
-      );
-    }
+    /*
+     * PORTAL AREA
+     *
+     * Staff must use their assigned staff dashboard.
+     */
+    if (pathname.startsWith("/portal")) {
+      if (STAFF_ROLES.includes(role ?? "")) {
+        return redirectHome(req, role);
+      }
 
-    // Analysts should use the analytics area, not the portal.
-    if (
-      role === "ANALYST" &&
-      pathname.startsWith("/portal")
-    ) {
-      return NextResponse.redirect(
-        new URL("/analytics", req.url)
-      );
-    }
+      // Parents use the parent portal, not player-only pages.
+      if (
+        role === "PARENT" &&
+        PLAYER_ONLY_PORTAL_PREFIXES.some((prefix) =>
+          isPathOrChild(pathname, prefix)
+        )
+      ) {
+        return redirectHome(req, role);
+      }
 
-    // Coaches cannot access administrator-only sections.
-    if (
-      role === "COACH" &&
-      ADMIN_ONLY_PREFIXES.some((prefix) =>
-        pathname.startsWith(prefix)
-      )
-    ) {
-      return NextResponse.redirect(
-        new URL("/admin", req.url)
-      );
-    }
-
-    // Parents cannot access player-only portal sections.
-    if (
-      role === "PARENT" &&
-      PLAYER_ONLY_PORTAL_PREFIXES.some((prefix) =>
-        pathname.startsWith(prefix)
-      )
-    ) {
-      return NextResponse.redirect(
-        new URL("/portal/parent", req.url)
-      );
+      return NextResponse.next();
     }
 
     return NextResponse.next();

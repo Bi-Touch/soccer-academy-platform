@@ -5,6 +5,33 @@ import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
+function dashboardFor(role: string | undefined): string {
+  switch (role) {
+    case "ADMIN":
+    case "COACH":
+      return "/admin";
+
+    case "SAFEGUARDING_LEAD":
+      return "/admin/safeguarding";
+
+    case "MEDICAL_OFFICER":
+      return "/admin/health";
+
+    case "ANALYST":
+      return "/analytics";
+
+    case "PARENT":
+      return "/portal/parent";
+
+    case "PLAYER":
+      return "/portal/dashboard";
+
+    default:
+      // Never send an unrecognized role into a privileged area.
+      return "/login?error=role";
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -15,40 +42,52 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
 
     setError("");
     setSubmitting(true);
 
     try {
-      const res = await signIn("credentials", {
-        email,
+      const result = await signIn("credentials", {
+        email: email.trim(),
         password,
         redirect: false,
         rememberMe,
       });
 
-      if (!res || res.error) {
+      if (!result || result.error) {
         setError("Incorrect email or password.");
         return;
       }
 
+      // Read the session after credentials sign-in succeeds.
       const session = await getSession();
       const role = session?.user?.role;
 
-      if (role === "ADMIN" || role === "COACH") {
-        router.push("/admin");
-      } else if (role === "PARENT") {
-        router.push("/portal/parent");
-      } else if (role === "ANALYST") {
-        router.push("/analytics");
-      } else {
-        router.push("/portal/dashboard");
+      if (!role) {
+        setError(
+          "Your account role could not be verified. Please sign in again or contact the administrator."
+        );
+        return;
       }
 
+      const destination = dashboardFor(role);
+
+      if (destination === "/login?error=role") {
+        setError(
+          "Your account does not have a recognized role. Please contact the administrator."
+        );
+        return;
+      }
+
+      // Replace the login page so Back does not return to the form.
+      router.replace(destination);
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("Login error:", err);
       setError("Unable to sign in. Please try again.");
     } finally {
       setSubmitting(false);
@@ -93,7 +132,6 @@ export default function LoginPage() {
           boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
         }}
       >
-        {/* Academy logo and heading */}
         <div
           style={{
             display: "flex",
@@ -137,7 +175,6 @@ export default function LoginPage() {
           </h1>
         </div>
 
-        {/* Login form */}
         <form onSubmit={handleSubmit}>
           <label
             style={{
@@ -206,8 +243,12 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={() => setShowPassword((current) => !current)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() =>
+                  setShowPassword((current) => !current)
+                }
+                aria-label={
+                  showPassword ? "Hide password" : "Show password"
+                }
                 aria-pressed={showPassword}
                 style={{
                   position: "absolute",
@@ -228,7 +269,6 @@ export default function LoginPage() {
             </div>
           </label>
 
-          {/* Remember me and password recovery */}
           <div
             style={{
               display: "flex",
@@ -257,7 +297,6 @@ export default function LoginPage() {
                 disabled={submitting}
                 style={{ cursor: "pointer" }}
               />
-
               Remember me
             </label>
 
@@ -274,7 +313,6 @@ export default function LoginPage() {
             </a>
           </div>
 
-          {/* Error message */}
           {error && (
             <p
               role="alert"
@@ -289,7 +327,6 @@ export default function LoginPage() {
             </p>
           )}
 
-          {/* Submit button */}
           <button
             type="submit"
             className="button"
@@ -304,7 +341,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Registration link */}
         <p
           style={{
             textAlign: "center",
@@ -314,7 +350,6 @@ export default function LoginPage() {
           }}
         >
           New to the Academy?{" "}
-
           <a
             href="/register/player"
             style={{

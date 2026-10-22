@@ -5,8 +5,8 @@ import { requireHealthAccess } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { formatDate } from "@/lib/dates";
 import { getConsentedPlayerIds } from "@/lib/consentLedger";
-import { decryptField, profileContext } from "@/lib/healthCrypto";
-import { updateHealthProfile } from "./actions";
+import { HEALTH_CONTEXT, decryptField, decryptForDisplay, profileContext } from "@/lib/healthCrypto";
+import { addInjury, markInjuryRecovered, updateHealthProfile } from "./actions";
 
 const cardStyle = { background: "#fff", border: "1px solid #e3ded2", borderRadius: 8, padding: 20, marginBottom: 20 } as const;
 const headingStyle = { fontSize: "0.85rem", fontWeight: 600, color: "var(--pitch)", marginBottom: 8 } as const;
@@ -16,7 +16,7 @@ const labelStyle = { fontSize: "0.85rem", display: "block", marginTop: 12 } as c
 
 export default async function PlayerHealthPage(props: {
   params: Promise<{ playerId: string }>;
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const params = await props.params;
   const search = await props.searchParams;
@@ -36,6 +36,7 @@ export default async function PlayerHealthPage(props: {
       team: { select: { name: true } },
       emergencyContacts: { orderBy: { isPrimary: "desc" } },
       healthProfile: true,
+      injuryRecords: { orderBy: { dateOccurred: "desc" } },
     },
   });
   if (!player) notFound();
@@ -81,6 +82,17 @@ export default async function PlayerHealthPage(props: {
       {search.saved === "1" && (
         <div role="status" style={{ ...noticeStyle, background: "#e7f3ed", border: "1px solid var(--pitch)", color: "var(--pitch)" }}>
           Health information saved.
+        </div>
+      )}
+
+      {search.error === "injury" && (
+        <div role="alert" style={{ ...noticeStyle, background: "#fdecec", border: "1px solid var(--card-red)", color: "var(--card-red)" }}>
+          Enter the injury type and a valid date.
+        </div>
+      )}
+      {search.error === "secure" && (
+        <div role="alert" style={{ ...noticeStyle, background: "#fdecec", border: "1px solid var(--card-red)", color: "var(--card-red)" }}>
+          This could not be saved securely, so nothing was saved. Check the health data encryption key.
         </div>
       )}
 
@@ -168,6 +180,76 @@ export default async function PlayerHealthPage(props: {
           </p>
           <button type="submit" className="button">Save health information</button>
         </form>
+      )}
+
+      {level === "full" && (
+        <div style={cardStyle}>
+          <h2 style={headingStyle}>INJURIES</h2>
+          {player.injuryRecords.length === 0 ? (
+            <p style={{ fontSize: "0.9rem", opacity: 0.7 }}>No injuries recorded.</p>
+          ) : (
+            player.injuryRecords.map((injury) => (
+              <div key={injury.id} style={{ borderTop: "1px solid #f0ede5", padding: "10px 0", fontSize: "0.9rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <strong>{injury.injuryType}</strong>
+                  <span style={{ color: injury.status === "ACTIVE" ? "var(--card-red)" : "var(--pitch)", fontWeight: 600 }}>
+                    {injury.status === "ACTIVE" ? "Active" : "Recovered"}
+                  </span>
+                </div>
+                <div style={{ fontSize: "0.8rem", opacity: 0.7 }}>
+                  {formatDate(injury.dateOccurred)}
+                  {injury.expectedReturnDate && ` · expected back ${formatDate(injury.expectedReturnDate)}`}
+                  {injury.actualReturnDate && ` · returned ${formatDate(injury.actualReturnDate)}`}
+                </div>
+                {injury.description && (
+                  <p style={{ margin: "6px 0 0", whiteSpace: "pre-wrap" }}>
+                    {decryptForDisplay(injury.description, HEALTH_CONTEXT.injuryDescription)}
+                  </p>
+                )}
+                {injury.treatment && (
+                  <p style={{ margin: "6px 0 0", whiteSpace: "pre-wrap", opacity: 0.85 }}>
+                    Treatment: {decryptForDisplay(injury.treatment, HEALTH_CONTEXT.injuryTreatment)}
+                  </p>
+                )}
+                {injury.status === "ACTIVE" && (
+                  <form action={markInjuryRecovered.bind(null, injury.id)} style={{ marginTop: 6 }}>
+                    <button type="submit" style={{ background: "none", border: "none", color: "var(--pitch)", cursor: "pointer", fontSize: "0.85rem", padding: 0, textDecoration: "underline" }}>
+                      Mark recovered
+                    </button>
+                  </form>
+                )}
+              </div>
+            ))
+          )}
+
+          <form action={addInjury.bind(null, player.id)} style={{ borderTop: "1px solid #e3ded2", marginTop: 12, paddingTop: 12 }}>
+            <p style={{ fontSize: "0.85rem", fontWeight: 600, margin: 0 }}>Record an injury</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <label style={labelStyle}>
+                Injury type *
+                <input name="injuryType" required maxLength={100} placeholder="e.g. Ankle sprain" style={inputStyle} />
+              </label>
+              <label style={labelStyle}>
+                Date *
+                <input name="dateOccurred" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} style={inputStyle} />
+              </label>
+              <label style={labelStyle}>
+                Expected return
+                <input name="expectedReturnDate" type="date" style={inputStyle} />
+              </label>
+            </div>
+            <label style={labelStyle}>
+              Description
+              <textarea name="description" rows={2} maxLength={2000} style={{ ...inputStyle, resize: "vertical" }} />
+            </label>
+            <label style={labelStyle}>
+              Treatment
+              <textarea name="treatment" rows={2} maxLength={2000} style={{ ...inputStyle, resize: "vertical" }} />
+            </label>
+            <p style={{ fontSize: "0.8rem", opacity: 0.7, margin: "8px 0" }}>Description and treatment are stored encrypted.</p>
+            <button type="submit" className="button">Save injury</button>
+          </form>
+        </div>
       )}
 
       {profile && (

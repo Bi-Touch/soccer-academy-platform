@@ -8,7 +8,9 @@ import { logAudit } from "@/lib/audit";
 import {
   PROFILE_SECRET_FIELDS,
   decryptField,
+  encryptField,
   encryptProfileFields,
+  HEALTH_CONTEXT,
   profileContext,
   type ProfileSecretField,
 } from "@/lib/healthCrypto";
@@ -73,4 +75,94 @@ export async function updateHealthProfile(playerId: string, formData: FormData):
   revalidatePath(`/admin/health/${playerId}`);
   revalidatePath(`/portal/parent/${playerId}/health`);
   redirect(`/admin/health/${playerId}?saved=1`);
+}
+
+function validDate(value: string): Date | null {
+  const date = new Date(`${value}T12:00:00.000Z`);
+  return value && !Number.isNaN(date.getTime()) ? date : null;
+}
+
+/**
+ * Records an injury. Admins and medical officers. The description and treatment are encrypted;
+ * the audit entry records the type and dates only.
+ */
+export async function addInjury(playerId: string, formData: FormData): Promise<void> {
+  const staff = await requireHealthWrite();
+  const back = `/admin/health/${playerId}`;
+
+  const player = await prisma.player.findUnique({ where: { id: playerId }, select: { id: true } });
+  if (!player) notFound();
+
+  const injuryType = read(formData, "injuryType", 100);
+  const occurred = validDate(String(formData.get("dateOccurred") ?? ""));
+  if (!injuryType || !occurred) redirect(`${back}?error=injury`);
+
+  const expectedRaw = String(formData.get("expectedReturnDate") ?? "");
+  const expected = expectedRaw ? validDate(expectedRaw) : null;
+  if (expectedRaw && !expected) redirect(`${back}?error=injury`);
+
+  let description: string | null;
+  let treatment: string | null;
+  try {
+    description = encryptField(read(formData, "description", 2000), HEALTH_CONTEXT.injuryDescription);
+    treatment = encryptField(read(formData, "treatment", 2000), HEALTH_CONTEXT.injuryTreatment);
+  } catch (e) {
+    console.error("Could not encrypt injury details:", e);
+    redirect(`${back}?error=secure`);
+  }
+
+  const created = await prisma.injuryRecord.create({
+    data: {
+      playerId,
+      injuryType,
+      description,
+      treatment,
+      dateOccurred: occurred,
+      expectedReturnDate: expected,
+      recordedBy: staff.id,
+      status: "ACTIVE",
+    },
+  });
+
+  await logAudit({
+    action: "injury.create",
+    entityType: "InjuryRecord",
+    entityId: created.id,
+    playerId,
+    summary: "Recorded an injury",
+    changes: { injuryType, dateOccurred: occurred.toISOString().slice(0, 10), status: "ACTIVE" },
+  });
+
+  revalidatePath(back);
+  revalidatePath("/admin/health");
+  revalidatePath("/admin/injuries");
+  revalidatePath(`/admin/players/${playerId}/reports`);
+  redirect(`${back}?saved=1`);
+}
+
+/** Marks an injury as recovered. Admins and medical officers. */
+export async function markInjuryRecovered(injuryId: string): Promise<void> {
+  await requireHealthWrite();
+
+  const before = await prisma.injuryRecord.findUnique({ where: { id: injuryId } });
+  if (!before) notFound();
+
+  const injury = await prisma.injuryRecord.update({
+    where: { id: injuryId },
+    data: { status: "RECOVERED", actualReturnDate: new Date() },
+  });
+
+  await logAudit({
+    action: "injury.recovered",
+    entityType: "InjuryRecord",
+    entityId: injuryId,
+    playerId: injury.playerId,
+    summary: "Marked an injury as recovered",
+    changes: { status: { from: before.status, to: injury.status } },
+  });
+
+  revalidatePath(`/admin/health/${injury.playerId}`);
+  revalidatePath("/admin/health");
+  revalidatePath("/admin/injuries");
+  revalidatePath(`/admin/players/${injury.playerId}/reports`);
 }

@@ -7,6 +7,10 @@ import { getSessionUser } from "@/lib/permissions";
 const SIZE_OPTIONS = [20, 50, 100];
 const DEFAULT_SIZE = 50;
 
+// Safeguarding activity is kept out of this general log on purpose. Who raised a concern, who opened it
+// and why is visible only to safeguarding leads, in their own Access Log. This page shows counts only.
+const HIDDEN_ACTION_PREFIX = "safeguarding.";
+
 const cardStyle: React.CSSProperties = {
   background: "#fff",
   border: "1px solid #e3ded2",
@@ -38,8 +42,13 @@ const ACTION_FILTERS = [
   { value: "", label: "All actions" },
   { value: "auth.", label: "Sign-ins" },
   { value: "player.", label: "Players" },
+  { value: "registration.", label: "Registrations" },
   { value: "guardian.", label: "Parents / guardians" },
   { value: "consent.", label: "Consent" },
+  { value: "health.", label: "Health records" },
+  { value: "injury.", label: "Injuries" },
+  { value: "staff.", label: "Staff accounts" },
+  { value: "clearance.", label: "Staff clearances" },
   { value: "import.", label: "Imports" },
   { value: "user.", label: "User accounts" },
 ];
@@ -60,7 +69,11 @@ export default async function AuditLogPage(props: { searchParams: Promise<Search
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
   const q = searchParams.q?.trim();
 
-  const where: Prisma.AuditLogWhereInput = {};
+  // Every query on this page, including the row count, starts from "not a safeguarding entry".
+  // It applies even if someone types a safeguarding action into the address bar.
+  const where: Prisma.AuditLogWhereInput = {
+    NOT: { action: { startsWith: HIDDEN_ACTION_PREFIX } },
+  };
   if (searchParams.action) where.action = { startsWith: searchParams.action };
   if (q) {
     where.OR = [
@@ -73,7 +86,13 @@ export default async function AuditLogPage(props: { searchParams: Promise<Search
   const lte = parseDate(searchParams.to, true);
   if (gte || lte) where.createdAt = { ...(gte && { gte }), ...(lte && { lte }) };
 
-  const [rows, total] = await Promise.all([
+  // Counts only, no names, dates, children or reasons. Lets leadership see that safeguarding records
+  // are being handled without exposing who or what.
+  const since = new Date(Date.now() - 30 * 86400000);
+  const countSince = (action: string) =>
+    prisma.auditLog.count({ where: { action, createdAt: { gte: since } } });
+
+  const [rows, total, raised, opened, updated] = await Promise.all([
     prisma.auditLog.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -81,6 +100,9 @@ export default async function AuditLogPage(props: { searchParams: Promise<Search
       skip: (page - 1) * pageSize,
     }),
     prisma.auditLog.count({ where }),
+    countSince("safeguarding.raise"),
+    countSince("safeguarding.view"),
+    countSince("safeguarding.update"),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -106,6 +128,12 @@ export default async function AuditLogPage(props: { searchParams: Promise<Search
       <p style={{ opacity: 0.7, marginTop: 4, fontSize: "0.9rem" }}>
         A record of who did what, and when. Entries can't be edited or deleted from the app.
       </p>
+
+      <div role="note" style={{ ...cardStyle, padding: 12, marginTop: 16, fontSize: "0.85rem", background: "#f7f5ef" }}>
+        <strong>Safeguarding activity is not listed here.</strong> Who raised, opened or updated a safeguarding record, and why,
+        is visible only to safeguarding leads in their own Access Log. In the last 30 days: {raised} concern{raised === 1 ? "" : "s"} raised,{" "}
+        {opened} record{opened === 1 ? "" : "s"} opened, {updated} update{updated === 1 ? "" : "s"} made.
+      </div>
 
       <form method="GET" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", marginTop: 20 }}>
         <input type="hidden" name="size" value={pageSize} />
