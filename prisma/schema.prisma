@@ -830,6 +830,23 @@ model InjuryRecord {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Individual Academy Website Editor
+// ─────────────────────────────────────────────────────────────
+
+  enum WebsiteStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+}
+
+enum WebsiteMediaSourceType {
+  UPLOAD
+  GALLERY_PHOTO
+  VIDEO
+  EXTERNAL
+}
+
+// ─────────────────────────────────────────────────────────────
 // Audit Logs
 // ─────────────────────────────────────────────────────────────
 
